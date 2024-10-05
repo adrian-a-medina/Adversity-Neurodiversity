@@ -13,44 +13,78 @@ author: Adrián Medina
 date: last-modified
 ---
 
-# Introduction
+# Project Overview
+***
 
-This RMarkdown document presents the data analysis conducted for the manuscript entitled "***Intersections of Adversity & Neurodiversity: Adverse Childhood Experiences' Association to Mental Health & the Buffering Role of Flourishing***" ([in preparation]{.underline}). The analysis aims to explore the relationship between adverse childhood experiences (ACEs) and mental health outcomes among children living with neurodevelopmental disorders. Utilizing data from the National Survey of Children's Health (NSCH) spanning from 2016 to 2022, this work examines the moderating effects of child flourishing on the relationship between ACEs and mental health outcomes: anxiety, depression, and behavioral issues.
+This repository contains files relevant to a study investigating the relationship between adverse childhood experiences (ACEs) and mental health outcomes in children with neurodevelopmental disorders (NDDs), such as Autism Spectrum Disorder (ASD) and ADHD. The study specifically examines the moderating role of child flourishing behaviors—curiosity in learning, emotional control, and task persistence—on the effects of ACEs on mental health outcomes.
 
-The objectives of this analysis include:
+[**Study Design**]{.underline}**:\
+The study utilizes data from the National Survey of Children’s Health (NSCH), focusing on children aged 6-17 with reported neurodevelopmental issues (N = 44,776, M<sub>Age</sub> = 12.2). This cross-sectional analysis examines ACE exposure and its impact on three primary mental health outcomes: anxiety, depression, and behavioral issues. The moderating role of child flourishing behaviors is assessed using interaction terms in logistic regression models.
 
-1.  Assessing the dose-response relationship between the number of ACEs and the risk of developing psychological issues.
-2.  Exploring how aspects of child flourishing can mitigate the negative impacts of ACEs.
-3.  Providing empirical support for the integration of flourishing-based strategies in interventions designed for children with neurodevelopmental challenges.
+[**Data Collection**]{.underline}**:\
+Key variables collected include:
 
-The insights derived from this analysis are intended to contribute to the academic discussion on pediatric mental health and support evidence-based policy making in child welfare and education. For detailed information on the dataset variables, refer to the [[**NSCH Data Dictionary**]{.underline}](https://www.census.gov/data-tools/demo/uccb/nschdict?s_keyword=).
+- **Adverse Childhood Experiences (ACEs)**: Derived from parent-reported experiences such as exposure to violence, household dysfunction, and discrimination.
+- **Mental Health Outcomes**: Parent-reported diagnoses of anxiety, depression, and behavioral problems, confirmed by health care providers or educators.
+- **Child Flourishing Metrics**: Based on parent-reported behaviors such as curiosity in learning, emotional control, and task persistence, which were used to develop a Child Flourishing Index (CFI).
 
-# Dataset Initialization
+[**Analytic Approach**]{.underline}**:\
+The primary analytic approach involved logistic regression models to assess the association between ACEs and mental health outcomes, with interaction terms to explore the moderating effect of child flourishing. Key covariates include age, sex, race/ethnicity, and socioeconomic status.
 
-```{r Setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, webshot = TRUE)
-```
+[**Goals**]{.underline}**:\
+The study aims to:
+
+- **Examine the dose-response relationship** between the number of ACEs and risks of mental health challenges in neurodivergent children.
+- **Identify the protective role of child flourishing behaviors**, offering insights into resilience-promoting interventions for this vulnerable population.
+
+::: callout-tip
+For detailed information on the dataset variables, refer to the [[**NSCH Data Dictionary**]{.underline}](https://www.census.gov/data-tools/demo/uccb/nschdict?s_keyword=).
+:::
+
+# Code Workflow {#code-workflow}
+***
+
+1.  [Data Frame Initialization](#data-frame-initialization)
+2.  [Analytic Data Preparation](#analytic-data-preparation)
+3.  [Frequencies & Descriptive Statistics](#frequencies-descriptive-statistics)
+4.  [Inferential Statistics](#inferential-statistics)
+
+# Data Frame Initialization {#data-frame-initialization}
+***
+
+Set up the R environment by configuring the CRAN repository, installing essential packages, setting the base path, and loading the primary dataset into the local environment.
 
 ```{r Install & Load Necessary Packages, message = FALSE, warning = FALSE}
+# Set CRAN repository for consistent package installation
+options(repos = c(CRAN = "http://cran.rstudio.com/"))
+
 # Install and load the pacman package for efficient package management
 if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
 # Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2)
+p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2)
 
-# Set CRAN repository for consistent package installation
-options(repos = c(CRAN = "http://cran.rstudio.com/"))
+# Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
+base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
+setwd(base_path)
+
+# Load primary data file
+neurodivergent_data <- read_csv("neurodivergent_data.csv") # <1>
 
 ```
 
-```{r Data Extraction & Filtering, echo=TRUE, message=FALSE, warning=FALSE}
+1. See details under the `important` callout below!
+
+::: {.callout-important}
+### Data Extraction & Filtering (Archived Code)
+The file being used for these analyses is a subset of a "master" file containing the compiled contents of the data releases from the National Survey on Child Health's 2016-2022 cycles. The master file is nearly 500 MB (0.5 GB) in size, making it cumbersome to process in real-time. For efficiency and ease of analysis, I am using a smaller subset that contains only the relevant data. This subset was generated using the data extraction and filtering process detailed in the archived code below, in an effort to maintain transparency and ensure reproducibility of the workflow.
+```{r, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
 # Define the path to the dataset
-data_path <- "~/Downloads/data_files/Data2_2016to2022.csv"  
+data_path <- "~/Downloads/Data2_2016to2022.csv"  
 Data2_2016to2022 <- read.csv(data_path)
 
-# Prepare project data: Select specific variables, create 'neurodivergent' variable,
-# & filter data based on age and neurodivergent status
+# Prepare project data: Select specific variables, create 'neurodivergent' variable, & filter data based on age and neurodivergent status
 neurodivergent_data <- Data2_2016to2022 %>%
   select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis, k2q35a, k2q35c, k2q38a,
          k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, k2q37a, k2q37c, downsyn, downsyn_desc, 
@@ -66,20 +100,20 @@ neurodivergent_data <- Data2_2016to2022 %>%
 
 # Resulting filtered data to be used for further analysis
 write.csv(neurodivergent_data, "neurodivergent_data.csv")
-
 ```
+:::
 
-# Variable Preparation
+# Analytic Data Preparation {#analytic-data-preparation}
+***
 
-```{r Recoding Analytic Variables & Covariates, echo=TRUE, message=FALSE, warning=FALSE}
-# Recode 'ace1' to dichotomous variable based on analytic specifications
-# 'ace1' is originally coded by NSCH as a frequency measure
-# It is needed as indicative variable of presence like the other 'ace#' variables
+Set up recoding of variables by transforming 'ace1' into a dichotomous variable, calculating the Childhood Flourishing Index (CFI), and categorizing total ACE counts. Recode education, income, sex, race/ethnicity, and CFI into categorical factors for analysis.
+
+```{r Recoding Analytic Variables & Covariates, message=FALSE, warning=FALSE}
+# Recode 'ace1' to dichotomous variable based on analytic specifications # <1>
 neurodivergent_data$ace1_recode <- ifelse(neurodivergent_data$ace1 %in% c(2, 3, 4), 1, 
                                           ifelse(neurodivergent_data$ace1 == 1, 0, NA))
 
-### Combining data manipulation functions into single 'dplyr' chain to optimize code execution.
-# Calculate the Childhood Flourishing Index (CFI) based on Bethell et al. (2019) criteria
+# Calculate the Childhood Flourishing Index (CFI) based on Bethell et al. (2019) criteria # <2>
 neurodivergent_data <- neurodivergent_data %>%
   mutate(CFI = rowSums(select(., k6q71_r, k7q85_r, k7q84_r) == 1, na.rm = TRUE),
          # Total ACE count for each child excluding missing values
@@ -140,12 +174,13 @@ neurodivergent_data <- neurodivergent_data %>%
 
 ```
 
-# Frequencies, Visualizations, & Descriptive Statistics
+1. `ace1` is originally coded by NSCH as a frequency measure, but it's needed as indicative variable of presence like the other `ace#` variables.
+2. Combining data manipulation functions into single `dplyr` chain to optimize code execution.
 
-```{r Frequency Calculations, echo=TRUE, results='asis'}
-# Output with `results='asis'`: This ensures that the output from `knitr::kable` is rendered as HTML 
-# (or LaTeX, depending on the output format of your document) directly into the document, enhancing the readability of tables.
+# Frequencies & Descriptive Statistics {#frequencies-descriptive-statistics}
+***
 
+```{r Frequency Calculations, message=FALSE, warning=FALSE}
 # Creating frequency tables for specific diagnostic outcomes to assess their distribution in the dataset
 freq_k2q33b <- table(neurodivergent_data$k2q33b == 1, useNA="ifany")
 freq_k2q32b <- table(neurodivergent_data$k2q32b == 1, useNA="ifany")
@@ -166,7 +201,7 @@ cat("Number of Subjects Flourishing (CFI Score of 3):", num_subjects_cfi_3, "\n"
 
 ```
 
-```{r Visualizations}
+```{r Visualizations, message=FALSE, warning=FALSE}
 # Histogram of ages for neurodivergent participants
 ggplot(neurodivergent_data, aes(x = sc_age_years)) +
   geom_histogram(binwidth = 1, fill = "blue", color = "black") +
@@ -252,7 +287,7 @@ ggplot(neurodivergent_data, aes(x = sc_race_cat)) +
 
 ```
 
-```{r Descriptive Statistics & Cross Tabulations, echo=FALSE, results='asis', message=FALSE, warning=FALSE, cache=TRUE}
+```{r Descriptive Statistics and Cross Tabulations, message=FALSE, warning=FALSE}
 # Calculate mean and standard deviation of age for neurodivergent participants
 age_stats <- neurodivergent_data %>%
   filter(neurodivergent == 1) %>%
@@ -306,9 +341,10 @@ knitr::kable(table_data, format = "latex", caption = "Frequency and Percentage o
 
 ```
 
-# Inferential Statistics
+# Inferential Statistics {#inferential-statistics}
+***
 
-```{r Data Subsetting & Recoding Factors, echo=TRUE, message=FALSE, warning=FALSE}
+```{r Data Subsetting and Recoding Factors, message=FALSE, warning=FALSE}
 # Subsetting data for regression analysis and recoding variables to factors for proper model fitting
 analysis_data <- neurodivergent_data %>%
   select(ace_counts, CFI_dich, k2q33b, k2q32b, k2q34b, sc_race_cat, sc_sex_cat, fpl_cat, highgrade_tvis_cat, sc_age_years) %>%
@@ -336,7 +372,7 @@ str(analysis_data)
 
 ```
 
-```{r Logistic Regressions, Interaction Terms, Exponentiation, & Confidence Intervals, echo=TRUE, message=FALSE, warning=FALSE}
+```{r Logistic Regressions and Exponentiations, message=FALSE, warning=FALSE}
 # Fit basic logistic regression models for multiple outcomes and compute odds ratios and confidence intervals
 outcomes <- list("Anxiety" = neurodivergent_data$k2q33b, "Depression" = neurodivergent_data$k2q32b, "Behavioral Problems" = neurodivergent_data$k2q34b)
 models <- list()
