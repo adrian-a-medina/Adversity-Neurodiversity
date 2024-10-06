@@ -119,69 +119,114 @@ Set up recoding of variables by transforming 'ace1' into a dichotomous variable,
 neurodivergent_data$ace1_recode <- ifelse(neurodivergent_data$ace1 %in% c(2, 3, 4), 1, 
                                           ifelse(neurodivergent_data$ace1 == 1, 0, NA))
 
-# Calculate the Childhood Flourishing Index (CFI) based on Bethell et al. (2019) criteria # <2>
+# Recode ACE counts and calculate Childhood Flourishing Index (CFI) #<2>
 neurodivergent_data <- neurodivergent_data %>%
-  mutate(CFI = rowSums(select(., k6q71_r, k7q85_r, k7q84_r) == 1, na.rm = TRUE),
-         # Total ACE count for each child excluding missing values
-         ace_total = rowSums(select(., ace1_recode, ace3:ace12) == 1, na.rm = TRUE),
-         # Categorize total ACEs for further analysis
-         ace_counts = cut(ace_total, breaks = c(-1, 0, 1, 3, Inf),
-                          labels = c('1', '2', '3', '4'), right = TRUE),
-         # Recode education, income, sex, race/ethnicity variables into categorical factors
-         highgrade_tvis_cat = case_when(
-           higrade_tvis == 1 ~ "Less than high school",
-           higrade_tvis == 2 ~ "High school (including vocational)",
-           higrade_tvis == 3 ~ "Some college or associate degree",
-           higrade_tvis == 4 ~ "College degree or higher",
-           TRUE ~ NA_character_
-         ),
-         fpl_cat = case_when(
-           fpl %in% c(50:99) | fpl_mean < 100 ~ "Less than 100%",
-           fpl %in% c(100:199) | fpl_mean < 200 ~ "100% to 199%",
-           fpl %in% c(200:299) | fpl_mean < 300 ~ "200% to 299%",
-           fpl %in% c(300:399) | fpl_mean < 400 ~ "300% to 399%",
-           fpl %in% c(400:999) | fpl_mean < 999 ~ "400% or greater",
-           TRUE ~ NA_character_
-         ),
-         sc_sex_cat = case_when(
-           sc_sex == 1 ~ "Male",
-           sc_sex == 2 ~ "Female",
-           TRUE ~ NA_character_
-         ),
-         race = case_when(
-           sc_race_r == 1 ~ "White",
-           sc_race_r == 2 ~ "Black",
-           sc_race_r == 3 ~ "American Indian or Alaska Native",
-           sc_race_r %in% 4:5 ~ "Asian, Native Hawaiian, or Pacific Islander",
-           sc_race_r %in% 6:7 ~ "Other or mixed race",
-           TRUE ~ NA_character_
-         ),
-         ethnicity = case_when(
-           sc_hispanic_r == 1 ~ "Hispanic/Latino",
-           sc_hispanic_r == 2 ~ "Non-Hispanic/Latino",
-           TRUE ~ NA_character_
-         ),
-         sc_race_cat = case_when(
-           race %in% c("White") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic White",
-           race %in% c("Black") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Black or African American",
-           race %in% c("American Indian or Alaska Native") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic American Indian or Alaska Native",
-           race %in% c("Asian, Native Hawaiian or Pacific Islander") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Asian, Native Hawaiian or Pacific Islander",
-           race %in% c("Other or mixed race") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Other or mixed race",
-           ethnicity == "Hispanic/Latino" ~ "Hispanic or Latino of any race",
-           TRUE ~ NA_character_
-         ),
-         # Recode CFI into dichotomous variable
-         CFI_dich = case_when(
-           CFI == 3 ~ "1",
-           CFI %in% 0:2 ~ "0",
-           TRUE ~ NA_character_
-         )
+  mutate(
+    # Total ACE count for each child excluding missing values
+    ace_total = rowSums(select(., ace1_recode, ace3:ace12) == 1, na.rm = TRUE),
+    
+    # Categorize total ACEs for further analysis
+    ace_counts = cut(ace_total, breaks = c(-1, 0, 1, 3, Inf), labels = c('0', '1', '2-3', '4+'), right = TRUE),
+    ace_counts = factor(ace_counts, levels = c("0", "1", "2-3", "4+")), # Recreate 'ace_counts' factor
+
+    # Calculate the Childhood Flourishing Index (CFI)
+    CFI = rowSums(select(., k6q71_r, k7q85_r, k7q84_r) == 1, na.rm = TRUE),
+    
+    # Recode CFI into dichotomous variable
+    CFI_dich = case_when(
+      CFI == 3 ~ "Flourishing",
+      CFI %in% 0:2 ~ "Not Flourishing",
+      TRUE ~ NA_character_
+    ),
+    CFI_dich = factor(CFI_dich, levels = c("Not Flourishing", "Flourishing")) # Recreate 'CFI_dich' factor
+  )
+
+# Recode binary outcomes for anxiety, depression, and behavioral issues into factors
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Recode Anxiety (k2q33b)
+    Anxiety = factor(k2q33b, levels = c(2, 1), labels = c("No", "Yes")),
+    
+    # Recode Depression (k2q32b)
+    Depression = factor(k2q32b, levels = c(2, 1), labels = c("No", "Yes")),
+    
+    # Recode Behavioral Issues (k2q34b)
+    Behavioral_Issues = factor(k2q34b, levels = c(2, 1), labels = c("No", "Yes"))
+  )
+
+# Recode education and income categories
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Recode education into categorical factors
+    highgrade_tvis_cat = case_when(
+      higrade_tvis == 1 ~ "Less than high school",
+      higrade_tvis == 2 ~ "High school (including vocational)",
+      higrade_tvis == 3 ~ "Some college or associate degree",
+      higrade_tvis == 4 ~ "College degree or higher",
+      TRUE ~ NA_character_
+    ),
+    highgrade_tvis_cat = factor(highgrade_tvis_cat, levels = c("Less than high school", "High school (including vocational)", "Some college or associate degree", "College degree or higher")),
+
+    # Recode federal poverty level categories into factors
+    fpl_cat = case_when(
+      fpl %in% c(50:99) | fpl_mean < 100 ~ "Less than 100%",
+      fpl %in% c(100:199) | fpl_mean < 200 ~ "100% to 199%",
+      fpl %in% c(200:299) | fpl_mean < 300 ~ "200% to 299%",
+      fpl %in% c(300:399) | fpl_mean < 400 ~ "300% to 399%",
+      fpl %in% c(400:999) | fpl_mean < 999 ~ "400% or greater",
+      TRUE ~ NA_character_
+    ),
+    fpl_cat = factor(fpl_cat, levels = c("Less than 100%", "100% to 199%", "200% to 299%", "300% to 399%", "400% or greater"))
+  )
+
+# Recode sex and race categories
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Recode sex into categorical factors
+    sc_sex_cat = case_when(
+      sc_sex == 1 ~ "Male",
+      sc_sex == 2 ~ "Female",
+      TRUE ~ NA_character_
+    ),
+    sc_sex_cat = factor(sc_sex_cat, levels = c("Male", "Female")),
+
+    # Recode race and ethnicity
+    race = case_when(
+      sc_race_r == 1 ~ "White",
+      sc_race_r == 2 ~ "Black",
+      sc_race_r == 3 ~ "American Indian or Alaska Native",
+      sc_race_r %in% 4:5 ~ "Asian, Native Hawaiian, or Pacific Islander",
+      sc_race_r %in% 6:7 ~ "Other or mixed race",
+      TRUE ~ NA_character_
+    ),
+
+    ethnicity = case_when(
+      sc_hispanic_r == 1 ~ "Hispanic/Latino",
+      sc_hispanic_r == 2 ~ "Non-Hispanic/Latino",
+      TRUE ~ NA_character_
+    ),
+
+    # Recreate 'sc_race_cat' from race and ethnicity combinations
+    sc_race_cat = case_when(
+      race %in% c("White") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic White",
+      race %in% c("Black") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Black or African American",
+      race %in% c("American Indian or Alaska Native") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic American Indian or Alaska Native",
+      race %in% c("Asian, Native Hawaiian or Pacific Islander") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Asian, Native Hawaiian or Pacific Islander",
+      race %in% c("Other or mixed race") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Other or mixed race",
+      ethnicity == "Hispanic/Latino" ~ "Hispanic or Latino of any race",
+      TRUE ~ NA_character_
+    ),
+    sc_race_cat = factor(sc_race_cat, levels = c("Non-Hispanic White", "Non-Hispanic Black or African American", 
+                                                 "Non-Hispanic American Indian or Alaska Native", 
+                                                 "Non-Hispanic Asian, Native Hawaiian or Pacific Islander", 
+                                                 "Non-Hispanic Other or mixed race", 
+                                                 "Hispanic or Latino of any race"))
   )
 
 ```
 
 1.  `ace1` is originally coded by NSCH as a frequency measure, but it's needed as indicative variable of presence like the other `ace#` variables.
-2.  Combining data manipulation functions into single `dplyr` chain to optimize code execution.
+2.  Part of this includes the calculating of the Childhood Flourishing Index (CFI) based on Bethell et al. (2019) criteria
 
 # Frequencies & Descriptive Statistics {#frequencies-descriptive-statistics}
 
@@ -294,7 +339,7 @@ ggplot(neurodivergent_data, aes(x = sc_race_cat)) +
 
 ```
 
-```{r Descriptive Statistics and Cross Tabulations, message=FALSE, warning=FALSE}
+```{r Descriptive Statistics and Cross Tabulations, eval=FALSE, message=FALSE, warning=FALSE}
 # Calculate mean and standard deviation of age for neurodivergent participants
 age_stats <- neurodivergent_data %>%
   filter(neurodivergent == 1) %>%
@@ -352,69 +397,69 @@ knitr::kable(table_data, format = "latex", caption = "Frequency and Percentage o
 
 ------------------------------------------------------------------------
 
-```{r Data Subsetting and Recoding Factors, message=FALSE, warning=FALSE}
-# Subsetting data for regression analysis and recoding variables to factors for proper model fitting
-analysis_data <- neurodivergent_data %>%
-  select(ace_counts, CFI_dich, k2q33b, k2q32b, k2q34b, sc_race_cat, sc_sex_cat, fpl_cat, highgrade_tvis_cat, sc_age_years) %>%
-  mutate(
-    # Recoding ACE counts into a factor with ordered levels indicating the number of adverse childhood experiences
-    ace_counts = factor(ace_counts, levels = c("0", "1", "2-3", "4+")),
-    
-    # Recoding the Childhood Flourishing Index into a binary factor indicating flourishing status
-    CFI_dich = factor(CFI_dich, levels = c("Not flourishing", "Flourishing")),
-    
-    # Recoding binary outcomes for anxiety, depression, and behavioral issues into factors
-    Anxiety = factor(k2q33b, levels = c("No", "Yes")),
-    Depression = factor(k2q32b, levels = c("No", "Yes")),
-    Behavioral_Issues = factor(k2q34b, levels = c("No", "Yes")),
-    
-    # Recoding race categories into factors to ensure proper representation in statistical tests
-    sc_race_cat = factor(sc_race_cat, levels = c(
-      "Non-Hispanic White", "Non-Hispanic Black or African American", 
-      "Non-Hispanic American Indian or Alaska Native", 
-      "Non-Hispanic Asian, Native Hawaiian or Pacific Islander", 
-      "Non-Hispanic Other or mixed race", "Hispanic or Latino of any race"
-    )),
-    
-    # Recoding sex categories into a factor to control for gender differences in the analysis
-    sc_sex_cat = factor(sc_sex_cat, levels = c("Male", "Female")),
-    
-    # Recoding federal poverty level categories into factors to reflect socioeconomic status
-    fpl_cat = factor(fpl_cat, levels = c(
-      "Less than 100%", "100% to 199%", "200% to 299%", "300% to 399%", "400% or greater"
-    )),
-    
-    # Recoding educational attainment into factors, categorized by the highest level achieved
-    highgrade_tvis_cat = factor(highgrade_tvis_cat, levels = c(
-      "Less than high school", "High school (including vocational)", 
-      "Some college or associate degree", "College degree or higher"
-    ))
-  )
+```{r Logistic Regression Models}
+#| column: screen
+#| out-width: 100%
+#| layout-ncol: 3
 
-# Apply relevel separately after the mutate step to ensure proper reference levels are set
-analysis_data <- analysis_data %>%
-  mutate(
-    ace_counts = relevel(ace_counts, ref = "0"),  # Explicitly setting "0" as the reference level for ACE counts
-    sc_race_cat = relevel(sc_race_cat, ref = "Non-Hispanic White")  # Explicitly setting "Non-Hispanic White" as the reference level for race
-  )
-
-# Check the structure of the data to confirm the reference levels
-str(analysis_data)
-
-```
-
-```{r Logistic Regressions}
 # Logistic regression models without interactions
 model_anx <- glm(Anxiety ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-               data = analysis_data, family = binomial)
+               data = neurodivergent_data, family = binomial)
 
 model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-               data = analysis_data, family = binomial)
+               data = neurodivergent_data, family = binomial)
 
 model_beh <- glm(Behavioral_Issues ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-               data = analysis_data, family = binomial)
+               data = neurodivergent_data, family = binomial)
 
 # Display the models using tab_model with 95% confidence intervals
-tab_model(model_anx, model_dep, model_beh, show.ci = 0.95, show.reflvl = TRUE)
+tab_model(model_anx, model_dep, model_beh, show.ci = 0.95) # <1>
+
+# Plot for the Anxiety model with x-axis limits between 0.1 and 5
+plot_model(model_anx, type = "est", show.values = TRUE, show.p = TRUE, ci.lvl = 0.95, 
+           title = "Odds Ratios - Anxiety", axis.lim = c(0.1, 5))
+
+# Plot for the Depression model with x-axis limits between 0.1 and 5
+plot_model(model_dep, type = "est", show.values = TRUE, show.p = TRUE, ci.lvl = 0.95, 
+           title = "Odds Ratios - Depression", axis.lim = c(0.1, 5))
+
+# Plot for the Behavioral Issues model with x-axis limits between 0.1 and 5
+plot_model(model_beh, type = "est", show.values = TRUE, show.p = TRUE, ci.lvl = 0.95, 
+           title = "Odds Ratios - Behavioral Issues", axis.lim = c(0.1, 5))
 
 ```
+
+1. The `tab_model` function from the `sjPlot` package automatically exponentiates the logistic regression coefficients into Odds Ratios when displaying models with a binomial family (logistic regression).
+
+```{r Interaction Term Models}
+#| column: screen
+#| out-width: 100%
+#| layout-ncol: 3
+
+# Logistic regression model with CFI_dich as a moderator for Anxiety
+model_anx_mod <- glm(Anxiety ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
+                     data = neurodivergent_data, family = binomial)
+
+# Logistic regression model with CFI_dich as a moderator for Depression
+model_dep_mod <- glm(Depression ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
+                     data = neurodivergent_data, family = binomial)
+
+# Logistic regression model with CFI_dich as a moderator for Behavioral Issues
+model_beh_mod <- glm(Behavioral_Issues ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
+                     data = neurodivergent_data, family = binomial)
+
+# Display the models with tab_model
+tab_model(model_anx_mod, model_dep_mod, model_beh_mod, show.ci = 0.95, transform = NULL) # <1>
+
+# Plot marginal effects for the Anxiety model
+plot_model(model_anx_mod, type = "int", title = "Interaction: ace_counts * CFI_dich (Anxiety)")
+
+# Plot marginal effects for the Depression model
+plot_model(model_dep_mod, type = "int", title = "Interaction: ace_counts * CFI_dich (Depression)")
+
+# Plot marginal effects for the Behavioral Issues model
+plot_model(model_beh_mod, type = "int", title = "Interaction: ace_counts * CFI_dich (Behavioral Issues)")
+
+```
+
+1. Since we included interaction terms, we want to see the raw coefficients instead. You can set `transform = NULL` in the `tab_model` function to ensure the values aren't exponetiated into Odds Ratios.
