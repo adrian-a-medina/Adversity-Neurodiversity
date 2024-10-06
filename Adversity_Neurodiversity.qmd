@@ -14,7 +14,8 @@ date: last-modified
 ---
 
 # Project Overview
-***
+
+------------------------------------------------------------------------
 
 This repository contains files relevant to a study investigating the relationship between adverse childhood experiences (ACEs) and mental health outcomes in children with neurodevelopmental disorders (NDDs), such as Autism Spectrum Disorder (ASD) and ADHD. The study specifically examines the moderating role of child flourishing behaviors—curiosity in learning, emotional control, and task persistence—on the effects of ACEs on mental health outcomes.
 
@@ -24,9 +25,9 @@ The study utilizes data from the National Survey of Children’s Health (NSCH), 
 [**Data Collection**]{.underline}:\
 Key variables collected include:
 
-- **Adverse Childhood Experiences (ACEs)**: Derived from parent-reported experiences such as exposure to violence, household dysfunction, and discrimination.
-- **Mental Health Outcomes**: Parent-reported diagnoses of anxiety, depression, and behavioral problems, confirmed by health care providers or educators.
-- **Child Flourishing Metrics**: Based on parent-reported behaviors such as curiosity in learning, emotional control, and task persistence, which were used to develop a Child Flourishing Index (CFI).
+-   **Adverse Childhood Experiences (ACEs)**: Derived from parent-reported experiences such as exposure to violence, household dysfunction, and discrimination.
+-   **Mental Health Outcomes**: Parent-reported diagnoses of anxiety, depression, and behavioral problems, confirmed by health care providers or educators.
+-   **Child Flourishing Metrics**: Based on parent-reported behaviors such as curiosity in learning, emotional control, and task persistence, which were used to develop a Child Flourishing Index (CFI).
 
 [**Analytic Approach**]{.underline}:\
 The primary analytic approach involved logistic regression models to assess the association between ACEs and mental health outcomes, with interaction terms to explore the moderating effect of child flourishing. Key covariates include age, sex, race/ethnicity, and socioeconomic status.
@@ -34,15 +35,16 @@ The primary analytic approach involved logistic regression models to assess the 
 [**Goals**]{.underline}:\
 The study aims to:
 
-- **Examine the dose-response relationship** between the number of ACEs and risks of mental health challenges in neurodivergent children.
-- **Identify the protective role of child flourishing behaviors**, offering insights into resilience-promoting interventions for this vulnerable population.
+-   **Examine the dose-response relationship** between the number of ACEs and risks of mental health challenges in neurodivergent children.
+-   **Identify the protective role of child flourishing behaviors**, offering insights into resilience-promoting interventions for this vulnerable population.
 
 ::: callout-tip
 For detailed information on the dataset variables, refer to the [[**NSCH Data Dictionary**]{.underline}](https://www.census.gov/data-tools/demo/uccb/nschdict?s_keyword=).
 :::
 
 # Code Workflow {#code-workflow}
-***
+
+------------------------------------------------------------------------
 
 1.  [Data Frame Initialization](#data-frame-initialization)
 2.  [Analytic Data Preparation](#analytic-data-preparation)
@@ -50,7 +52,8 @@ For detailed information on the dataset variables, refer to the [[**NSCH Data Di
 4.  [Inferential Statistics](#inferential-statistics)
 
 # Data Frame Initialization {#data-frame-initialization}
-***
+
+------------------------------------------------------------------------
 
 Set up the R environment by configuring the CRAN repository, installing essential packages, setting the base path, and loading the primary dataset into the local environment.
 
@@ -63,7 +66,7 @@ if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
 # Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2)
+p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot)
 
 # Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
 base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
@@ -74,11 +77,13 @@ neurodivergent_data <- read_csv("neurodivergent_data.csv") # <1>
 
 ```
 
-1. See details under the `important` callout below!
+1.  See details under the `important` callout below!
 
-::: {.callout-important}
+::: callout-important
 ### Data Extraction & Filtering (Archived Code)
+
 The file being used for these analyses is a subset of a "master" file containing the compiled contents of the data releases from the National Survey on Child Health's 2016-2022 cycles. The master file is nearly 500 MB (0.5 GB) in size, making it cumbersome to process in real-time. For efficiency and ease of analysis, I am using a smaller subset that contains only the relevant data. This subset was generated using the data extraction and filtering process detailed in the archived code below, in an effort to maintain transparency and ensure reproducibility of the workflow.
+
 ```{r, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
 # Define the path to the dataset
 data_path <- "~/Downloads/Data2_2016to2022.csv"  
@@ -104,7 +109,8 @@ write.csv(neurodivergent_data, "neurodivergent_data.csv")
 :::
 
 # Analytic Data Preparation {#analytic-data-preparation}
-***
+
+------------------------------------------------------------------------
 
 Set up recoding of variables by transforming 'ace1' into a dichotomous variable, calculating the Childhood Flourishing Index (CFI), and categorizing total ACE counts. Recode education, income, sex, race/ethnicity, and CFI into categorical factors for analysis.
 
@@ -174,11 +180,12 @@ neurodivergent_data <- neurodivergent_data %>%
 
 ```
 
-1. `ace1` is originally coded by NSCH as a frequency measure, but it's needed as indicative variable of presence like the other `ace#` variables.
-2. Combining data manipulation functions into single `dplyr` chain to optimize code execution.
+1.  `ace1` is originally coded by NSCH as a frequency measure, but it's needed as indicative variable of presence like the other `ace#` variables.
+2.  Combining data manipulation functions into single `dplyr` chain to optimize code execution.
 
 # Frequencies & Descriptive Statistics {#frequencies-descriptive-statistics}
-***
+
+------------------------------------------------------------------------
 
 ```{r Frequency Calculations, message=FALSE, warning=FALSE}
 # Creating frequency tables for specific diagnostic outcomes to assess their distribution in the dataset
@@ -342,7 +349,8 @@ knitr::kable(table_data, format = "latex", caption = "Frequency and Percentage o
 ```
 
 # Inferential Statistics {#inferential-statistics}
-***
+
+------------------------------------------------------------------------
 
 ```{r Data Subsetting and Recoding Factors, message=FALSE, warning=FALSE}
 # Subsetting data for regression analysis and recoding variables to factors for proper model fitting
@@ -351,67 +359,62 @@ analysis_data <- neurodivergent_data %>%
   mutate(
     # Recoding ACE counts into a factor with ordered levels indicating the number of adverse childhood experiences
     ace_counts = factor(ace_counts, levels = c("0", "1", "2-3", "4+")),
+    
     # Recoding the Childhood Flourishing Index into a binary factor indicating flourishing status
     CFI_dich = factor(CFI_dich, levels = c("Not flourishing", "Flourishing")),
-    # Recoding binary outcomes for behavioral issues, depression, and anxiety into factors
-    k2q33b = factor(k2q33b, levels = c("No", "Yes")),
-    k2q32b = factor(k2q32b, levels = c("No", "Yes")),
-    k2q34b = factor(k2q34b, levels = c("No", "Yes")),
+    
+    # Recoding binary outcomes for anxiety, depression, and behavioral issues into factors
+    Anxiety = factor(k2q33b, levels = c("No", "Yes")),
+    Depression = factor(k2q32b, levels = c("No", "Yes")),
+    Behavioral_Issues = factor(k2q34b, levels = c("No", "Yes")),
+    
     # Recoding race categories into factors to ensure proper representation in statistical tests
-    sc_race_cat = factor(sc_race_cat, levels = c("Non-Hispanic White", "Non-Hispanic Black or African American", "Non-Hispanic American Indian or Alaska Native", "Non-Hispanic Asian, Native Hawaiian or Pacific Islander", "Non-Hispanic Other or mixed race", "Hispanic or Latino of any race")),
+    sc_race_cat = factor(sc_race_cat, levels = c(
+      "Non-Hispanic White", "Non-Hispanic Black or African American", 
+      "Non-Hispanic American Indian or Alaska Native", 
+      "Non-Hispanic Asian, Native Hawaiian or Pacific Islander", 
+      "Non-Hispanic Other or mixed race", "Hispanic or Latino of any race"
+    )),
+    
     # Recoding sex categories into a factor to control for gender differences in the analysis
     sc_sex_cat = factor(sc_sex_cat, levels = c("Male", "Female")),
+    
     # Recoding federal poverty level categories into factors to reflect socioeconomic status
-    fpl_cat = factor(fpl_cat, levels = c("Less than 100%", "100% to 199%", "200% to 299%", "300% to 399%", "400% or greater")),
+    fpl_cat = factor(fpl_cat, levels = c(
+      "Less than 100%", "100% to 199%", "200% to 299%", "300% to 399%", "400% or greater"
+    )),
+    
     # Recoding educational attainment into factors, categorized by the highest level achieved
-    highgrade_tvis_cat = factor(highgrade_tvis_cat, levels = c("Less than high school", "High school (including vocational)", "Some college or associate degree", "College degree or higher"))
+    highgrade_tvis_cat = factor(highgrade_tvis_cat, levels = c(
+      "Less than high school", "High school (including vocational)", 
+      "Some college or associate degree", "College degree or higher"
+    ))
   )
 
-# Output the structure of the newly created dataset to verify the changes and ensure correct data types
+# Apply relevel separately after the mutate step to ensure proper reference levels are set
+analysis_data <- analysis_data %>%
+  mutate(
+    ace_counts = relevel(ace_counts, ref = "0"),  # Explicitly setting "0" as the reference level for ACE counts
+    sc_race_cat = relevel(sc_race_cat, ref = "Non-Hispanic White")  # Explicitly setting "Non-Hispanic White" as the reference level for race
+  )
+
+# Check the structure of the data to confirm the reference levels
 str(analysis_data)
 
 ```
 
-```{r Logistic Regressions and Exponentiations, message=FALSE, warning=FALSE}
-# Fit basic logistic regression models for multiple outcomes and compute odds ratios and confidence intervals
-outcomes <- list("Anxiety" = neurodivergent_data$k2q33b, "Depression" = neurodivergent_data$k2q32b, "Behavioral Problems" = neurodivergent_data$k2q34b)
-models <- list()
-or <- list()
-ci <- list()
+```{r Logistic Regressions}
+# Logistic regression models without interactions
+model_anx <- glm(Anxiety ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
+               data = analysis_data, family = binomial)
 
-for (outcome_name in names(outcomes)) {
-  outcome <- outcomes[[outcome_name]]
-  
-  # Fit model without interaction
-  model <- glm(outcome ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, 
-               family = binomial, data = analysis_data)
-  models[[paste(outcome_name, "No Interaction", sep = " ")]] <- model
-  
-  # Fit model with interaction
-  model_interaction <- glm(outcome ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, 
-                           family = binomial, data = analysis_data)
-  models[[paste(outcome_name, "With Interaction", sep = " ")]] <- model_interaction
-  
-  # Calculate odds ratios and confidence intervals, ensuring model convergence
-  if (!is.null(coef(model))) {
-    or[[outcome_name]] <- list(
-      "No Interaction" = exp(coef(model)),
-      "With Interaction" = exp(coef(model_interaction))
-    )
-    ci[[outcome_name]] <- tryCatch({
-      list(
-        "No Interaction" = exp(confint(model)),
-        "With Interaction" = exp(confint(model_interaction))
-      )
-    }, error = function(e) return(list(error = "Failed to compute confidence intervals")))
-  } else {
-    or[[outcome_name]] <- list(error = "Model did not converge")
-  }
-}
+model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
+               data = analysis_data, family = binomial)
 
-# Print model summaries and calculated odds ratios and confidence intervals
-lapply(models, summary)
-lapply(or, function(x) knitr::kable(x, caption = "Odds Ratios"))
-lapply(ci, function(x) knitr::kable(x, caption = "Confidence Intervals"))
+model_beh <- glm(Behavioral_Issues ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
+               data = analysis_data, family = binomial)
+
+# Display the models using tab_model with 95% confidence intervals
+tab_model(model_anx, model_dep, model_beh, show.ci = 0.95, show.reflvl = TRUE)
 
 ```
