@@ -67,7 +67,7 @@ if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
 # Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc)
+p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable)
 
 # Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
 base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
@@ -114,7 +114,7 @@ write.csv(neurodivergent_data, "neurodivergent_data.csv")
 
 ------------------------------------------------------------------------
 
-Set up recoding of variables by transforming 'ace1' into a dichotomous variable, calculating the Childhood Flourishing Index (CFI), and categorizing total ACE counts. Recode education, income, sex, race/ethnicity, and CFI into categorical factors for analysis.
+Recode analytic variables and covariates, including ACE counts, Childhood Flourishing Index (CFI), binary outcomes (anxiety, depression, behavioral issues), education, income, sex, and race/ethnicity variables into categorical factors for analysis.
 
 ```{r Recoding Analytic Variables & Covariates, message=FALSE, warning=FALSE}
 # Recode 'ace1' to dichotomous variable based on analytic specifications # <1>
@@ -128,8 +128,8 @@ neurodivergent_data <- neurodivergent_data %>%
     ace_total = rowSums(select(., ace1_recode, ace3:ace12) == 1, na.rm = TRUE),
     
     # Categorize total ACEs for further analysis
-    ace_counts = cut(ace_total, breaks = c(-1, 0, 1, 3, Inf), labels = c('0', '1', '2-3', '4+'), right = TRUE),
-    ace_counts = factor(ace_counts, levels = c("0", "1", "2-3", "4+")), # Recreate 'ace_counts' factor
+    ace_counts = cut(ace_total, breaks = c(-1, 0, 1, 3, Inf), labels = c('0 ACEs', '1 ACE', '2-3 ACEs', '4+ ACEs'), right = TRUE),
+    ace_counts = factor(ace_counts, levels = c("0 ACEs", "1 ACE", "2-3 ACEs", "4+ ACEs")), # Recreate 'ace_counts' factor
 
     # Calculate the Childhood Flourishing Index (CFI)
     CFI = rowSums(select(., k6q71_r, k7q85_r, k7q84_r) == 1, na.rm = TRUE),
@@ -161,24 +161,24 @@ neurodivergent_data <- neurodivergent_data %>%
   mutate(
     # Recode education into categorical factors
     highgrade_tvis_cat = case_when(
-      higrade_tvis == 1 ~ "Less than high school",
-      higrade_tvis == 2 ~ "High school (including vocational)",
-      higrade_tvis == 3 ~ "Some college or associate degree",
-      higrade_tvis == 4 ~ "College degree or higher",
+      higrade_tvis == 1 ~ "Less Than High School",
+      higrade_tvis == 2 ~ "High School/Vocational",
+      higrade_tvis == 3 ~ "Some College/Associate Degree",
+      higrade_tvis == 4 ~ "College Degree/Higher",
       TRUE ~ NA_character_
     ),
-    highgrade_tvis_cat = factor(highgrade_tvis_cat, levels = c("Less than high school", "High school (including vocational)", "Some college or associate degree", "College degree or higher")),
+    highgrade_tvis_cat = factor(highgrade_tvis_cat, levels = c("Less Than High School", "High School/Vocational", "Some College/Associate Degree", "College Degree/Higher")),
 
     # Recode federal poverty level categories into factors
     fpl_cat = case_when(
-      fpl %in% c(50:99) | fpl_mean < 100 ~ "Less than 100%",
-      fpl %in% c(100:199) | fpl_mean < 200 ~ "100% to 199%",
-      fpl %in% c(200:299) | fpl_mean < 300 ~ "200% to 299%",
-      fpl %in% c(300:399) | fpl_mean < 400 ~ "300% to 399%",
-      fpl %in% c(400:999) | fpl_mean < 999 ~ "400% or greater",
+      fpl %in% c(50:99) | fpl_mean < 100 ~ "<100%",
+      fpl %in% c(100:199) | fpl_mean < 200 ~ "100%-199%",
+      fpl %in% c(200:299) | fpl_mean < 300 ~ "200%-299%",
+      fpl %in% c(300:399) | fpl_mean < 400 ~ "300%-399%",
+      fpl %in% c(400:999) | fpl_mean < 999 ~ "≥400%",
       TRUE ~ NA_character_
     ),
-    fpl_cat = factor(fpl_cat, levels = c("Less than 100%", "100% to 199%", "200% to 299%", "300% to 399%", "400% or greater"))
+    fpl_cat = factor(fpl_cat, levels = c("<100%", "100%-199%", "200%-299%", "300%-399%", "≥400%"))
   )
 
 # Recode sex and race categories
@@ -198,7 +198,7 @@ neurodivergent_data <- neurodivergent_data %>%
       sc_race_r == 2 ~ "Black",
       sc_race_r == 3 ~ "American Indian or Alaska Native",
       sc_race_r %in% 4:5 ~ "Asian, Native Hawaiian, or Pacific Islander",
-      sc_race_r %in% 6:7 ~ "Other or mixed race",
+      sc_race_r %in% 6:7 ~ "Other or Mixed Race",
       TRUE ~ NA_character_
     ),
 
@@ -214,12 +214,12 @@ neurodivergent_data <- neurodivergent_data %>%
       race %in% c("Black") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Black or African American",
       race %in% c("American Indian or Alaska Native") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic American Indian or Alaska Native",
       race %in% c("Asian, Native Hawaiian, or Pacific Islander") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander",
-      race %in% c("Other or mixed race") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Other or mixed race",
-      ethnicity == "Hispanic/Latino" ~ "Hispanic or Latino of any race",
+      race %in% c("Other or Mixed Race") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Other or Mixed Race",
+      ethnicity == "Hispanic/Latino" ~ "Hispanic/Latino of Any Race",
       TRUE ~ NA_character_
     ),
     sc_race_cat = factor(sc_race_cat, levels = c("Non-Hispanic White", "Non-Hispanic Black or African American", 
-                                                "Non-Hispanic American Indian or Alaska Native", "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander", "Non-Hispanic Other or mixed race", "Hispanic or Latino of any race"))
+                                                "Non-Hispanic American Indian or Alaska Native", "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander", "Non-Hispanic Other or Mixed Race", "Hispanic/Latino of Any Race"))
   )
 
 ```
@@ -231,35 +231,51 @@ neurodivergent_data <- neurodivergent_data %>%
 
 ------------------------------------------------------------------------
 
-```{r Frequency Calculations, message=FALSE, warning=FALSE}
-# Constructing the frequency table for Anxiety, Depression, and Behavioral Issues where the response is "Yes"
-neurodiv_freq_table <- neurodivergent_data %>%
-  dplyr::summarise(
-    Anxiety_Yes = sum(Anxiety == "Yes", na.rm = TRUE),
-    Depression_Yes = sum(Depression == "Yes", na.rm = TRUE),
-    Behavioral_Issues_Yes = sum(Behavioral_Issues == "Yes", na.rm = TRUE)
-  )
+Calculate the prevalence of neurodevelopmental disorder (NDD) diagnoses by defining the relevant variables, computing the number of total respondents for each variable, and determining the percentage of diagnoses. Display the results in a table with a table note explaining the presentation format.
 
-# Display table in a simple HTML format using kable
-neurodiv_freq_table %>%
-  knitr::kable("html", col.names = c("Anxiety", "Depression", "Behavioral Issues"), 
-               caption = "Frequency of Mental Health Conditions in Neurodivergent Sample")
+```{r Neurodevelopmental Disorder Diagnoses, message=FALSE, warning=FALSE}
+# Calculate prevalence (%) of NDD diagnoses among subject sample
+variables <- c("k2q31a", "k2q35a", "k2q38a", "k2q30a", "k2q36a", "k2q60a", "k2q37a", "downsyn", "k2q61a")
+variable_names <- c("ADHD", "Autism/ASD", "Tourette’s Syndrome", "Learning Disability", 
+                    "Development Delay", "Intellectual Disability", 
+                    "Speech/Other Language Disorder", "Down Syndrome", "Cerebral Palsy")
 
-# Count the number of subjects with a CFI score of 3 using a logical condition, as this is considered 'Flourishing.'
-num_subjects_cfi_3 <- sum(neurodivergent_data$CFI == 3, na.rm = TRUE)
-cat("Number of Subjects Flourishing (CFI Score of 3):", num_subjects_cfi_3, "\n")
+# Pre-calculate total respondents to avoid repeated computation
+total_respondents <- colSums(!is.na(neurodivergent_data[variables]))
+
+# Vectorized prevalence calculation
+prevalences <- colSums(neurodivergent_data[variables] == 1, na.rm = TRUE) / total_respondents * 100
+prevalence_table <- data.frame(Diagnosis = variable_names, Prevalence = prevalences)
+
+# Display prevalence data in a table
+knitr::kable(prevalence_table, "html", caption = "Prevalence of Neurodivergent Conditions") %>%
+  kableExtra::footnote(general = "Prevalence values are presented as percentages for neurodevelopmental disorder diagnosis.")
 
 ```
 
-```{r Visualizations, message=FALSE, warning=FALSE}
-# Create the summary avg risk 'Y' data frame
+Summarize key demographic characteristics of the neurodivergent sample, including descriptive statistics for age, educational attainment, sex, socioeconomic status, and race. Display the results in a table and visualize distributions using raincloud and bar plots for each demographic variable.
+
+```{r Subject Demographics, message=FALSE, warning=FALSE}
+# Calculate descriptives of age for neurodivergent participants
 neurodiv_age_summary <- neurodivergent_data %>%
   dplyr::summarise(
-    score_mean = mean(sc_age_years, na.rm = TRUE),
-    n = n(), # Sample size for each group
-    sem = sd(sc_age_years, na.rm = TRUE) / sqrt(n()),
+    score_mean = mean(sc_age_years, na.rm = TRUE),  # Mean
+    n = n(),  # Sample size
+    sem = sd(sc_age_years, na.rm = TRUE) / sqrt(n()),  # Standard error of the mean
+    sd = sd(sc_age_years, na.rm = TRUE),  # Standard deviation
+    min_age = min(sc_age_years, na.rm = TRUE),  # Minimum
+    q1_age = quantile(sc_age_years, 0.25, na.rm = TRUE),  # 1st Quartile
+    median_age = median(sc_age_years, na.rm = TRUE),  # Median
+    q3_age = quantile(sc_age_years, 0.75, na.rm = TRUE),  # 3rd Quartile
+    max_age = max(sc_age_years, na.rm = TRUE),  # Maximum
+    IQR_age = quantile(sc_age_years, 0.75, na.rm = TRUE) - quantile(sc_age_years, 0.25, na.rm = TRUE),  # IQR (Q3 - Q1)
     .groups = 'drop'
   )
+
+# Create a neat table using kable
+neurodiv_age_summary %>%
+  knitr::kable("html", col.names = c("Mean", "Sample Size", "SEM", 
+                                    "SD", "Min", "Q1", "Median", "Q3", "Max", "IQR"), caption = "Descriptive Statistics of Age for Neurodivergent Participants")
 
 # Raincloud plot of ages for neurodivergent participants with color
 ggplot(neurodivergent_data, aes(x = 1, y = sc_age_years)) + # Set x to 1, as there's only one group
@@ -276,15 +292,55 @@ ggplot(neurodivergent_data, aes(x = 1, y = sc_age_years)) + # Set x to 1, as the
   theme_minimal() +
   theme(axis.text.x = element_blank()) # Remove x-axis text
 
-# Bar plot of ACE counts categories
-ggplot(neurodivergent_data, aes(x = factor(ace_counts), fill = factor(ace_counts))) +
-  geom_bar(show.legend = FALSE) +
+# Bar plot for educational attainment counts categories
+ggplot(neurodivergent_data %>% filter(!is.na(highgrade_tvis_cat)), aes(x = highgrade_tvis_cat)) +
+  geom_bar(aes(fill = highgrade_tvis_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
+  labs(title = "Distribution of Adults' Highest Educational Attainment",
+       x = "Educational Attainment",
+       y = "Count",
+       fill = "Educational Attainment") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Bar plot for sex counts distribution
+ggplot(neurodivergent_data, aes(x = sc_sex_cat)) +
+  geom_bar(aes(fill = sc_sex_cat), show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(x = "ACE Counts", y = "Number of Children", fill = "ACE Counts",
-       title = "Distribution of Children by ACE Counts") +
-  scale_x_discrete(labels = c('0' = "0 ACEs", '1' = "1 ACE", '2-3' = "2-3 ACEs", '4+' = "4+ ACEs")) +
+  scale_fill_manual(values = c("Male" = "lightblue", "Female" = "pink")) +
+  labs(title = "Distribution of Sex",
+       x = "Sex",
+       y = "Count") +
+  theme_minimal()
+
+# Bar plot for SES counts categories
+ggplot(neurodivergent_data, aes(x = fpl_cat)) +
+  geom_bar(aes(fill = fpl_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
+  labs(title = "Distribution of Socioeconomic Status (FPL)",
+       x = "Federal Poverty Level Groups",
+       y = "Count") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 0))
+
+# Bar plot for race counts categories
+ggplot(neurodivergent_data, aes(x = sc_race_cat)) +
+  geom_bar(aes(fill = sc_race_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), vjust=-0.3, size=3.5) +
+  labs(title = "Distribution by Race",
+       x = "Race",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+Calculate and display the number of subjects classified as 'Flourishing' based on a Childhood Flourishing Index (CFI) score of 3. Visualize the distribution of children by CFI score using bar plots for both the raw CFI scores and the dichotomized CFI variable.
+
+```{r Child Flourishing Index, message=FALSE, warning=FALSE}
+# Count the number of subjects with a CFI score of 3 using a logical condition, as this is considered 'Flourishing.'
+num_subjects_cfi_3 <- sum(neurodivergent_data$CFI == 3, na.rm = TRUE)
+cat("Number of Subjects Flourishing (CFI Score of 3):", num_subjects_cfi_3, "\n")
 
 # Bar plot of CFI counts categories
 ggplot(neurodivergent_data, aes(x = factor(CFI), fill = factor(CFI))) +
@@ -308,106 +364,78 @@ ggplot(neurodivergent_data, aes(x = CFI_dich)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 0))
 
-# Bar plot for educational attainment counts categories
-ggplot(neurodivergent_data %>% filter(!is.na(highgrade_tvis_cat)), aes(x = highgrade_tvis_cat)) +
-  geom_bar(aes(fill = highgrade_tvis_cat), show.legend = FALSE) +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(title = "Distribution of Adults' Highest Educational Attainment",
-       x = "Educational Attainment",
-       y = "Count",
-       fill = "Educational Attainment") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
-# Bar plot for sex counts distribution
-ggplot(neurodivergent_data, aes(x = sc_sex_cat)) +
-  geom_bar(aes(fill = sc_sex_cat), show.legend = FALSE) +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  scale_fill_manual(values = c("Male" = "lightblue", "Female" = "pink")) +
-  labs(title = "Distribution of Sex",
-       x = "Sex",
-       y = "Count") +
-  theme_minimal()
+Construct and display a frequency table that shows the number of participants with Anxiety, Depression, and Behavioral Issues based on responses indicating "Yes" for each condition. Present the results in an HTML table format using `kable`.
 
-#Bar plot for SES counts categories
-ggplot(neurodivergent_data, aes(x = fpl_cat)) +
-  geom_bar(aes(fill = fpl_cat), show.legend = FALSE) +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(title = "Distribution of Socioeconomic Status",
-       x = "Socioeconomic Status",
-       y = "Count") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```{r Mental Health Outcomes, message=FALSE, warning=FALSE}
+# Constructing the frequency table for Anxiety, Depression, and Behavioral Issues where the response is "Yes"
+neurodiv_freq_table <- neurodivergent_data %>%
+  dplyr::summarise(
+    Anxiety_Yes = sum(Anxiety == "Yes", na.rm = TRUE),
+    Depression_Yes = sum(Depression == "Yes", na.rm = TRUE),
+    Behavioral_Issues_Yes = sum(Behavioral_Issues == "Yes", na.rm = TRUE)
+  )
 
-# Bar plot for race counts categories
-ggplot(neurodivergent_data, aes(x = sc_race_cat)) +
-  geom_bar(aes(fill = sc_race_cat), show.legend = FALSE) +
-  geom_text(stat = 'count', aes(label = ..count..), vjust=-0.3, size=3.5) +
-  labs(title = "Distribution by Race",
-       x = "Race",
-       y = "Count") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# Display table in a simple HTML format using kable
+neurodiv_freq_table %>%
+  knitr::kable("html", col.names = c("Anxiety", "Depression", "Behavioral Issues"), 
+               caption = "Frequency of Mental Health Conditions in Neurodivergent Sample")
 
 ```
 
-```{r Descriptive Statistics and Cross Tabulations, eval=FALSE, message=FALSE, warning=FALSE}
-# Calculate mean and standard deviation of age for neurodivergent participants
-age_stats <- neurodivergent_data %>%
-  filter(neurodivergent == 1) %>%
-  summarise(
-    Mean_Age = mean(sc_age_years, na.rm = TRUE),
-    SD_Age = sd(sc_age_years, na.rm = TRUE)
-  )
+Visualize the distribution of ACE counts among children using a bar plot and calculate cross-tabulations for the number and percentage of participants with Anxiety, Depression, Behavioral Issues, and Flourishing status across ACE categories. Format the table to display values as "n (percentage)" for each ACE category and include a footnote explaining the presentation format.
 
-# Print the statistics using a nicely formatted table
-knitr::kable(age_stats, caption = "Age Statistics of Neurodivergent Participants")
+```{r ACEs and Cross Tabulations, message=FALSE, warning=FALSE}
+# Bar plot of ACE counts categories
+ggplot(neurodivergent_data, aes(x = factor(ace_counts), fill = factor(ace_counts))) +
+  geom_bar(show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
+  labs(x = "ACE Counts", y = "Number of Children", fill = "ACE Counts",
+       title = "Distribution of Children by ACE Counts") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0))
 
-# Calculate prevalence (%) of diagnoses among subject sample
-variables <- c("k2q31a", "k2q35a", "k2q38a", "k2q30a", "k2q36a", "k2q60a", "k2q37a", "downsyn", "k2q61a")
-variable_names <- c("ADHD", "Autism/ASD", "Tourette’s Syndrome", "Learning Disability", 
-                    "Development Delay", "Intellectual Disability", 
-                    "Speech/Other Language Disorder", "Down Syndrome", "Cerebral Palsy")
+# Define the total number of respondents for each ACE category
+ace_totals <- c(
+  "0 ACEs" = 12431,  # Total respondents with 0 ACEs
+  "1 ACE" = 13433,  # Total respondents with 1 ACE
+  "2-3 ACEs" = 12180,  # Total respondents with 2-3 ACEs
+  "4+ ACEs" = 6732   # Total respondents with 4+ ACEs
+)
 
-# Pre-calculate total respondents to avoid repeated computation
-total_respondents <- colSums(!is.na(neurodivergent_data[variables]))
-
-# Vectorized prevalence calculation
-prevalences <- colSums(neurodivergent_data[variables] == 1, na.rm = TRUE) / total_respondents * 100
-prevalence_table <- data.frame(Diagnosis = variable_names, Prevalence = prevalences)
-
-# Display prevalence data in a table
-knitr::kable(prevalence_table, caption = "Prevalence of Neurodivergent Conditions")
-
-# Prepare the data for cross-tabulations
-neurodivergent_data <- neurodivergent_data %>%
-  mutate(
-    k2q32b = factor(k2q32b, levels = c(2, 1), labels = c("No", "Yes")),
-    k2q33b = factor(k2q33b, levels = c(2, 1), labels = c("No", "Yes")),
-    k2q34b = factor(k2q34b, levels = c(2, 1), labels = c("No", "Yes")),
-    CFI_dich = factor(CFI_dich, levels = c(0, 1), labels = c("Not flourishing", "Flourishing")),
-    ace_counts = factor(ace_counts, levels = c(1, 2, 3, 4), labels = c("0", "1", "2 or 3", "4+"))
-  )
-
-# Create the cross-tabulations
-table_data <- neurodivergent_data %>%
-  select(k2q32b, k2q33b, k2q34b, CFI_dich, ace_counts) %>%
-  pivot_longer(cols = c(k2q32b, k2q33b, k2q34b, CFI_dich), names_to = "Condition", values_to = "Status") %>%
+# Compute the cross-tabulations, filtering out NA values and excluding "No" responses for Anxiety, Depression, and Behavioral Issues # <1>
+cross_tabs <- neurodivergent_data %>%
+  select(Anxiety, Depression, Behavioral_Issues, CFI_dich, ace_counts) %>%
+  pivot_longer(cols = c(Anxiety, Depression, Behavioral_Issues, CFI_dich), names_to = "Condition", values_to = "Status") %>%
+  filter(!is.na(Status), !is.na(ace_counts), !(Condition %in% c("Anxiety", "Depression", "Behavioral_Issues") & Status == "No")) %>%  # Filter out NA values and "No" responses
   group_by(Condition, Status, ace_counts) %>%
   summarise(n = n(), .groups = "drop") %>%
-  group_by(Condition, ace_counts) %>%
-  mutate(percent = n / sum(n) * 100) %>%
-  pivot_wider(names_from = ace_counts, values_from = c(n, percent), names_sep = ", ")
+  group_by(Condition, Status) %>%
+  # Calculate percentage by dividing n by the total number of respondents for each ACE category and create a string in the format n (percent)
+  summarise(
+    `0 ACEs` = if_else(any(ace_counts == "0 ACEs"), paste0(n[ace_counts == "0 ACEs"], " (", round(n[ace_counts == "0 ACEs"] / ace_totals["0 ACEs"] * 100, 1), ")"), NA_character_),
+    `1 ACE` = if_else(any(ace_counts == "1 ACE"), paste0(n[ace_counts == "1 ACE"], " (", round(n[ace_counts == "1 ACE"] / ace_totals["1 ACE"] * 100, 1), ")"), NA_character_),
+    `2-3 ACEs` = if_else(any(ace_counts == "2-3 ACEs"), paste0(n[ace_counts == "2-3 ACEs"], " (", round(n[ace_counts == "2-3 ACEs"] / ace_totals["2-3 ACEs"] * 100, 1), ")"), NA_character_),
+    `4+ ACEs` = if_else(any(ace_counts == "4+ ACEs"), paste0(n[ace_counts == "4+ ACEs"], " (", round(n[ace_counts == "4+ ACEs"] / ace_totals["4+ ACEs"] * 100, 1), ")"), NA_character_)
+  )
 
-# Format the table for presentation using 'kable' and 'kableExtra'
-knitr::kable(table_data, format = "latex", caption = "Frequency and Percentage of Psychopathology and Flourishing across ACEs Categories") %>%
-  kableExtra::kable_styling("striped", full_width = FALSE)
+# Format the table for presentation using 'kable' with the footnote spanning the full width
+cross_tabs %>%
+  knitr::kable("html", caption = "Frequency and Percentage of Psychopathology and Flourishing across ACEs Categories") %>%
+  kableExtra::kable_styling(full_width = TRUE) %>%  # Ensures the table spans the full width
+  kableExtra::footnote(general = "Values are presented as n (percentage) for each ACEs category. Cross-tabulations show the number and percentage of individuals with a specific mental health condition or flourishing status across different ACE categories.",
+                       footnote_as_chunk = TRUE)  # Formats the footnote to span full width
 
 ```
+
+1. Cross-tabulations (or contingency tables) summarize the relationship between two or more categorical variables. In this case, I'm exploring how the mental health conditions (Anxiety, Depression, Behavioral Issues) and Child Flourishing Index (CFI) are distributed across different levels of ACEs.
 
 # Inferential Statistics {#inferential-statistics}
 
 ------------------------------------------------------------------------
+
+Run three separate logistic regression models to examine the effects of ACE counts, race, sex, socioeconomic status, caregiver education, and child age on Anxiety, Depression, and Behavioral Issues outcomes. Present the exponentiated coefficients (odds ratios) and bold significant p-values (p < 0.05). Merge the summary tables of all three models into one, with each model labeled appropriately for clear comparison.
 
 ```{r Logistic Regression Models, message=FALSE, warning=FALSE}
 #| column: screen
@@ -467,6 +495,8 @@ tbl_merged
 
 ```
 
+Generate a combined plot showing the odds ratios from three separate logistic regression models (Anxiety, Depression, and Behavioral Issues). Configure the figure dimensions to 8x8, with confidence intervals (95%) and p-values displayed. Use different markers and colors for each model, set axis limits between 0.2 and 5, and include a legend labeling each model accordingly.
+
 ```{r Odds Ratio Plots, fig.dim = c(8, 8), message=FALSE, warning=FALSE}
 # Combine the plots into a list vector
 all.models <- list()
@@ -478,6 +508,8 @@ all.models[[3]] <- model_beh
 plot_models(all.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Model", legend.title = "Model", m.labels = c("Anxiety", "Depression", "Behavioral Issues"))
 
 ```
+
+Run logistic regression models that incorporate interaction terms between the ACE counts and the Child Flourishing Index (CFI_dich) for three different mental health outcomes (Anxiety, Depression, Behavioral Issues). Then, create individual summary tables for each model (without exponentiating the coefficients), highlighting statistically significant p-values. Finally, merge the tables into a single output, displaying all models side by side with appropriate labels and formatting.
 
 ```{r Interaction Term Models, message=FALSE, warning=FALSE}
 #| column: screen
@@ -542,6 +574,8 @@ mod_tbl_merged
 1. The interaction **anxiety** model **did not** yield significant findings, so we **do not** proceed with post-hoc analyses.
 2. The interaction **depression** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
 3. The interaction **behavioral issues** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
+
+To be edited.
 
 ```{r Post-Hoc Analyses, message=FALSE, warning=FALSE}
 # Create a summary table for the Depression model
