@@ -50,6 +50,7 @@ For detailed information on the dataset variables, refer to the [[**NSCH Data Di
 2.  [Analytic Data Preparation](#analytic-data-preparation)
 3.  [Frequencies & Descriptive Statistics](#frequencies-descriptive-statistics)
 4.  [Inferential Statistics](#inferential-statistics)
+5.  [Session Information](#session-information)
 
 # Data Frame Initialization {#data-frame-initialization}
 
@@ -66,7 +67,7 @@ if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
 # Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot)
+p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc)
 
 # Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
 base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
@@ -77,19 +78,19 @@ neurodivergent_data <- read_csv("neurodivergent_data.csv") # <1>
 
 ```
 
-1.  See details under the `important` callout below!
+1.  See details under the `Data Extraction & Filtering (Archived Code)` callout below!
 
 ::: callout-important
 ### Data Extraction & Filtering (Archived Code)
 
-The file being used for these analyses is a subset of a "master" file containing the compiled contents of the data releases from the National Survey on Child Health's 2016-2022 cycles. The master file is nearly 500 MB (0.5 GB) in size, making it cumbersome to process in real-time. For efficiency and ease of analysis, I am using a smaller subset that contains only the relevant data. This subset was generated using the data extraction and filtering process detailed in the archived code below, in an effort to maintain transparency and ensure reproducibility of the workflow.
+The file being used for these analyses is a subset of a "master" file, `Data2_2016to2022.csv`, containing the compiled contents of the data releases from the National Survey on Child Health's 2016-2022 cycles. The master file is nearly 500 MB (0.5 GB) in size, making it cumbersome to process in real-time. For efficiency and ease of analysis, I am using a smaller subset that contains only the relevant data. This subset was generated using the data extraction and filtering process detailed in the archived code below, in an effort to maintain transparency and ensure reproducibility of the workflow.
 
-```{r, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
+```{r Archived Data Extraction, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
 # Define the path to the dataset
 data_path <- "~/Downloads/Data2_2016to2022.csv"  
 Data2_2016to2022 <- read.csv(data_path)
 
-# Prepare project data: Select specific variables, create 'neurodivergent' variable, & filter data based on age and neurodivergent status
+# Select specific variables, create 'neurodivergent' variable, & filter data based on age and neurodivergent status
 neurodivergent_data <- Data2_2016to2022 %>%
   select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis, k2q35a, k2q35c, k2q38a,
          k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, k2q37a, k2q37c, downsyn, downsyn_desc, 
@@ -105,6 +106,7 @@ neurodivergent_data <- Data2_2016to2022 %>%
 
 # Resulting filtered data to be used for further analysis
 write.csv(neurodivergent_data, "neurodivergent_data.csv")
+
 ```
 :::
 
@@ -119,7 +121,7 @@ Set up recoding of variables by transforming 'ace1' into a dichotomous variable,
 neurodivergent_data$ace1_recode <- ifelse(neurodivergent_data$ace1 %in% c(2, 3, 4), 1, 
                                           ifelse(neurodivergent_data$ace1 == 1, 0, NA))
 
-# Recode ACE counts and calculate Childhood Flourishing Index (CFI) #<2>
+# Recode ACE counts and calculate Childhood Flourishing Index (CFI) # <2>
 neurodivergent_data <- neurodivergent_data %>%
   mutate(
     # Total ACE count for each child excluding missing values
@@ -211,16 +213,13 @@ neurodivergent_data <- neurodivergent_data %>%
       race %in% c("White") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic White",
       race %in% c("Black") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Black or African American",
       race %in% c("American Indian or Alaska Native") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic American Indian or Alaska Native",
-      race %in% c("Asian, Native Hawaiian or Pacific Islander") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Asian, Native Hawaiian or Pacific Islander",
+      race %in% c("Asian, Native Hawaiian, or Pacific Islander") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander",
       race %in% c("Other or mixed race") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Other or mixed race",
       ethnicity == "Hispanic/Latino" ~ "Hispanic or Latino of any race",
       TRUE ~ NA_character_
     ),
     sc_race_cat = factor(sc_race_cat, levels = c("Non-Hispanic White", "Non-Hispanic Black or African American", 
-                                                 "Non-Hispanic American Indian or Alaska Native", 
-                                                 "Non-Hispanic Asian, Native Hawaiian or Pacific Islander", 
-                                                 "Non-Hispanic Other or mixed race", 
-                                                 "Hispanic or Latino of any race"))
+                                                "Non-Hispanic American Indian or Alaska Native", "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander", "Non-Hispanic Other or mixed race", "Hispanic or Latino of any race"))
   )
 
 ```
@@ -233,19 +232,18 @@ neurodivergent_data <- neurodivergent_data %>%
 ------------------------------------------------------------------------
 
 ```{r Frequency Calculations, message=FALSE, warning=FALSE}
-# Creating frequency tables for specific diagnostic outcomes to assess their distribution in the dataset
-freq_k2q33b <- table(neurodivergent_data$k2q33b == 1, useNA="ifany")
-freq_k2q32b <- table(neurodivergent_data$k2q32b == 1, useNA="ifany")
-freq_k2q34b <- table(neurodivergent_data$k2q34b == 1, useNA="ifany")
+# Constructing the frequency table for Anxiety, Depression, and Behavioral Issues where the response is "Yes"
+neurodiv_freq_table <- neurodivergent_data %>%
+  dplyr::summarise(
+    Anxiety_Yes = sum(Anxiety == "Yes", na.rm = TRUE),
+    Depression_Yes = sum(Depression == "Yes", na.rm = TRUE),
+    Behavioral_Issues_Yes = sum(Behavioral_Issues == "Yes", na.rm = TRUE)
+  )
 
-# Combine frequency tables into a single data frame for easy viewing
-freq_table <- data.frame(
-  Diagnosis = c("Anxiety", "Depression", "Behavioral Problems"),
-  Count = c(freq_k2q33b["TRUE"], freq_k2q32b["TRUE"], freq_k2q34b["TRUE"])
-)
-
-# Use knitr::kable to format the frequency table for better readability in the output document
-knitr::kable(freq_table, caption = "Frequency of Specific Diagnostic Outcomes")
+# Display table in a simple HTML format using kable
+neurodiv_freq_table %>%
+  knitr::kable("html", col.names = c("Anxiety", "Depression", "Behavioral Issues"), 
+               caption = "Frequency of Mental Health Conditions in Neurodivergent Sample")
 
 # Count the number of subjects with a CFI score of 3 using a logical condition, as this is considered 'Flourishing.'
 num_subjects_cfi_3 <- sum(neurodivergent_data$CFI == 3, na.rm = TRUE)
@@ -254,88 +252,102 @@ cat("Number of Subjects Flourishing (CFI Score of 3):", num_subjects_cfi_3, "\n"
 ```
 
 ```{r Visualizations, message=FALSE, warning=FALSE}
-# Histogram of ages for neurodivergent participants
-ggplot(neurodivergent_data, aes(x = sc_age_years)) +
-  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
-  labs(title = "Age Distribution of Neurodivergent Participants", x = "Age (Years)", y = "Count") +
-  theme_minimal()
+# Create the summary avg risk 'Y' data frame
+neurodiv_age_summary <- neurodivergent_data %>%
+  dplyr::summarise(
+    score_mean = mean(sc_age_years, na.rm = TRUE),
+    n = n(), # Sample size for each group
+    sem = sd(sc_age_years, na.rm = TRUE) / sqrt(n()),
+    .groups = 'drop'
+  )
+
+# Raincloud plot of ages for neurodivergent participants with color
+ggplot(neurodivergent_data, aes(x = 1, y = sc_age_years)) + # Set x to 1, as there's only one group
+  PupillometryR::geom_flat_violin(adjust = 1.5, trim = FALSE, alpha = 0.5, color = NA, fill = "deeppink", position = position_nudge(x = 0.1, y = 0)) +
+  geom_point(alpha = 0.1, position = position_jitter(width = .05), size = .10, shape = 20, color = "deeppink") +
+  geom_boxplot(outlier.shape = NA, alpha = 0, width = 0.1, position = position_dodge(width = 0.3), colour = "black") +
+  geom_point(data = neurodiv_age_summary, aes(x = 1, y = score_mean), shape = 18, color = "deeppink", size = 3, position = position_nudge(x = 0.1)) +
+  geom_errorbar(data = neurodiv_age_summary, aes(x = 1, y = score_mean, ymin = score_mean - sem, ymax = score_mean + sem), width = 0.05, color = "deeppink", position = position_nudge(x = 0.1)) +
+  labs(
+    title = "Age Distribution of Neurodivergent Participants", 
+    y = "Age (Years)", 
+    x = "") + # No x-axis label since there's only one group
+  scale_y_continuous(breaks = seq(5, 18, by = 1), limits = c(5, 18)) + # Set y-axis range and increments
+  theme_minimal() +
+  theme(axis.text.x = element_blank()) # Remove x-axis text
 
 # Bar plot of ACE counts categories
 ggplot(neurodivergent_data, aes(x = factor(ace_counts), fill = factor(ace_counts))) +
-  geom_bar() +
+  geom_bar(show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(x = "ACE Counts Category", y = "Number of Children", fill = "ACE Category",
+  labs(x = "ACE Counts", y = "Number of Children", fill = "ACE Counts",
        title = "Distribution of Children by ACE Counts") +
-  scale_x_discrete(labels = c('1' = "0 ACEs", '2' = "1 ACE", '3' = "2-3 ACEs", '4' = "4+ ACEs")) +
+  scale_x_discrete(labels = c('0' = "0 ACEs", '1' = "1 ACE", '2-3' = "2-3 ACEs", '4+' = "4+ ACEs")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 0))
 
 # Bar plot of CFI counts categories
 ggplot(neurodivergent_data, aes(x = factor(CFI), fill = factor(CFI))) +
-  geom_bar() +
-  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5, color = "black") +
+  geom_bar(show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
   labs(x = "Childhood Flourishing Index (CFI) Score",
        y = "Number of Children",
        fill = "CFI Score",
        title = "Distribution of Children by CFI Score") +
-  scale_x_discrete(labels = c('0' = "0", '1' = "1", '2' = "2", '3' = "3")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 0))
 
 # Bar plot of CFI_dich counts categories
 ggplot(neurodivergent_data, aes(x = CFI_dich)) +
-  geom_bar(aes(fill = CFI_dich)) +
-  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
-  scale_fill_manual(values = c("0" = "blue", "1" = "green")) +
+  geom_bar(aes(fill = CFI_dich), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
   labs(title = "Distribution of CFI Dichotomous Variable",
        x = "Child Flourishing Index (Dichotomous)",
-       y = "Count") +
+       y = "Count",
+       fill = "CFI") +
   theme_minimal() +
-  theme(legend.title = element_blank()) # Remove the legend title if not needed
+  theme(axis.text.x = element_text(angle = 0))
 
 # Bar plot for educational attainment counts categories
-ggplot(neurodivergent_data, aes(x = highgrade_tvis_cat)) +
-  geom_bar(aes(fill = highgrade_tvis_cat)) +
-  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
-  scale_fill_brewer(palette = "Pastel1") +
+ggplot(neurodivergent_data %>% filter(!is.na(highgrade_tvis_cat)), aes(x = highgrade_tvis_cat)) +
+  geom_bar(aes(fill = highgrade_tvis_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
   labs(title = "Distribution of Adults' Highest Educational Attainment",
        x = "Educational Attainment",
-       y = "Count") +
+       y = "Count",
+       fill = "Educational Attainment") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.title = element_blank())
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Bar plot for sex counts distribution
 ggplot(neurodivergent_data, aes(x = sc_sex_cat)) +
-  geom_bar(aes(fill = sc_sex_cat)) +
-  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
+  geom_bar(aes(fill = sc_sex_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
   scale_fill_manual(values = c("Male" = "lightblue", "Female" = "pink")) +
-  labs(title = "Distribution by Sex",
+  labs(title = "Distribution of Sex",
        x = "Sex",
        y = "Count") +
-  theme_minimal() +
-  theme(legend.title = element_blank())
+  theme_minimal()
 
 #Bar plot for SES counts categories
 ggplot(neurodivergent_data, aes(x = fpl_cat)) +
-  geom_bar(aes(fill = fpl_cat)) +
-  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
-  scale_fill_brewer(palette = "Pastel2") +
+  geom_bar(aes(fill = fpl_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
   labs(title = "Distribution of Socioeconomic Status",
        x = "Socioeconomic Status",
        y = "Count") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.title = element_blank())
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Bar plot for race counts categories
 ggplot(neurodivergent_data, aes(x = sc_race_cat)) +
-  geom_bar(aes(fill = sc_race_cat)) +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5)) +
-  scale_fill_brewer(palette = "Set3") +
+  geom_bar(aes(fill = sc_race_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), vjust=-0.3, size=3.5) +
   labs(title = "Distribution by Race",
        x = "Race",
        y = "Count") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.title = element_blank())
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
@@ -397,10 +409,9 @@ knitr::kable(table_data, format = "latex", caption = "Frequency and Percentage o
 
 ------------------------------------------------------------------------
 
-```{r Logistic Regression Models}
+```{r Logistic Regression Models, message=FALSE, warning=FALSE}
 #| column: screen
 #| out-width: 100%
-#| layout-ncol: 3
 
 # Logistic regression models without interactions
 model_anx <- glm(Anxiety ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
@@ -412,47 +423,175 @@ model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + 
 model_beh <- glm(Behavioral_Issues ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
                data = neurodivergent_data, family = binomial)
 
-# Display the models using tab_model with 95% confidence intervals
-tab_model(model_anx, model_dep, model_beh, show.ci = 0.95) # <1>
+# Create a summary table for the Anixety model
+tbl_anx <- tbl_regression(model_anx, exponentiate = TRUE, label = list(
+      ace_counts ~ "ACEs",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
 
-# Plot for the Anxiety model with x-axis limits between 0.1 and 5
-plot_model(model_anx, type = "est", show.values = TRUE, show.p = TRUE, ci.lvl = 0.95, 
-           title = "Odds Ratios - Anxiety", axis.lim = c(0.1, 5))
+# Create a summary table for the Depression model
+tbl_dep <- tbl_regression(model_dep, exponentiate = TRUE, label = list(
+      ace_counts ~ "ACEs",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
 
-# Plot for the Depression model with x-axis limits between 0.1 and 5
-plot_model(model_dep, type = "est", show.values = TRUE, show.p = TRUE, ci.lvl = 0.95, 
-           title = "Odds Ratios - Depression", axis.lim = c(0.1, 5))
+# Create a summary table for the Behavioral Issues model
+tbl_beh <- tbl_regression(model_beh, exponentiate = TRUE, label = list(
+      ace_counts ~ "ACEs",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
 
-# Plot for the Behavioral Issues model with x-axis limits between 0.1 and 5
-plot_model(model_beh, type = "est", show.values = TRUE, show.p = TRUE, ci.lvl = 0.95, 
-           title = "Odds Ratios - Behavioral Issues", axis.lim = c(0.1, 5))
+# Merge all tables into one
+tbl_merged <- tbl_merge(
+  tbls = list(tbl_anx, tbl_dep, tbl_beh),
+  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Issues Model")
+)
+
+# Display the combined table
+tbl_merged
 
 ```
 
-1. The `tab_model` function from the `sjPlot` package automatically exponentiates the logistic regression coefficients into Odds Ratios when displaying models with a binomial family (logistic regression).
+```{r Odds Ratio Plots, fig.dim = c(8, 8), message=FALSE, warning=FALSE}
+# Combine the plots into a list vector
+all.models <- list()
+all.models[[1]] <- model_anx
+all.models[[2]] <- model_dep
+all.models[[3]] <- model_beh
 
-```{r Interaction Term Models}
+# Plot the combined version
+plot_models(all.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Model", legend.title = "Model", m.labels = c("Anxiety", "Depression", "Behavioral Issues"))
+
+```
+
+```{r Interaction Term Models, message=FALSE, warning=FALSE}
 #| column: screen
 #| out-width: 100%
-#| layout-ncol: 3
 
 # Logistic regression model with CFI_dich as a moderator for Anxiety
-model_anx_mod <- glm(Anxiety ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-                     data = neurodivergent_data, family = binomial)
+model_anx_mod <- glm(Anxiety ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
+
+# Create a summary table for the Anixety model # <1>
+tbl_anx_mod <- tbl_regression(model_anx_mod, exponentiate = FALSE, label = list(
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
 
 # Logistic regression model with CFI_dich as a moderator for Depression
-model_dep_mod <- glm(Depression ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-                     data = neurodivergent_data, family = binomial)
+model_dep_mod <- glm(Depression ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
+
+# Create a summary table for the Depression model # <2>
+tbl_dep_mod <- tbl_regression(model_dep_mod, exponentiate = FALSE, label = list(
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
 
 # Logistic regression model with CFI_dich as a moderator for Behavioral Issues
-model_beh_mod <- glm(Behavioral_Issues ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-                     data = neurodivergent_data, family = binomial)
+model_beh_mod <- glm(Behavioral_Issues ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
 
-# Display the models with tab_model
-tab_model(model_anx_mod, model_dep_mod, model_beh_mod, show.ci = 0.95, transform = NULL) # <1>
+# Create a summary table for the Behavioral Issues model # <3>
+tbl_beh_mod <- tbl_regression(model_beh_mod, exponentiate = FALSE, label = list( 
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
 
-# Plot marginal effects for the Anxiety model
-plot_model(model_anx_mod, type = "int", title = "Interaction: ace_counts * CFI_dich (Anxiety)")
+# Merge all tables into one
+mod_tbl_merged <- tbl_merge(
+  tbls = list(tbl_anx_mod, tbl_dep_mod, tbl_beh_mod),
+  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Issues Model")
+)
+
+# Display the combined table
+mod_tbl_merged
+
+```
+
+1. The interaction **anxiety** model **did not** yield significant findings, so we **do not** proceed with post-hoc analyses.
+2. The interaction **depression** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
+3. The interaction **behavioral issues** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
+
+```{r Post-Hoc Analyses, message=FALSE, warning=FALSE}
+# Create a summary table for the Depression model
+tbl_dep <- model_dep_mod |> 
+  tbl_regression(
+    tidy_fun = tidy_margins,
+    estimate_fun = scales::label_percent(style_positive = "plus"),
+    label = list(
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )
+  ) |>
+  bold_p(t = 0.05) |>  # Bold significant p-values
+  modify_header(label = "**Variable**") |>  # Adjust the header for the variable column
+  modify_spanning_header(c(estimate, ci, p.value) ~ "**Depression Model**") |>  # Custom header
+  bold_labels()  # Bold variable labels
+
+# Create a summary table for the Behavioral Issues model
+tbl_beh <- model_beh_mod |> 
+  tbl_regression(
+    tidy_fun = tidy_margins,
+    estimate_fun = scales::label_percent(style_positive = "plus"),
+    label = list(
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )
+  ) |>
+  bold_p(t = 0.05) |>  # Bold significant p-values
+  modify_header(label = "**Variable**") |>  # Adjust the header for the variable column
+  modify_spanning_header(c(estimate, ci, p.value) ~ "**Behavioral Issues Model**") |>  # Custom header
+  bold_labels()  # Bold variable labels
+
+# Merge all tables into one
+tbl_combined <- tbl_merge(
+  tbls = list(tbl_dep, tbl_beh),
+  tab_spanner = c("Depression Model", "Behavioral Issues Model")
+)
+
+# Display the combined table
+tbl_combined
 
 # Plot marginal effects for the Depression model
 plot_model(model_dep_mod, type = "int", title = "Interaction: ace_counts * CFI_dich (Depression)")
@@ -462,4 +601,21 @@ plot_model(model_beh_mod, type = "int", title = "Interaction: ace_counts * CFI_d
 
 ```
 
-1. Since we included interaction terms, we want to see the raw coefficients instead. You can set `transform = NULL` in the `tab_model` function to ensure the values aren't exponetiated into Odds Ratios.
+# Session Information {#session-information}
+***
+
+To enhance **reproducibility**, details about the **working environment** used for these analyses can be found below.
+
+<button type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+
+Session Information </button>
+
+::: {#collapseOne .accordion-collapse .collapse}
+<div>
+
+```{r}
+sessionInfo()
+```
+
+</div>
+:::
