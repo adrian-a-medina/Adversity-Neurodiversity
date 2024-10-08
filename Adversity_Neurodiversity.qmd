@@ -152,8 +152,8 @@ neurodivergent_data <- neurodivergent_data %>%
     # Recode Depression (k2q32b)
     Depression = factor(k2q32b, levels = c(2, 1), labels = c("No", "Yes")),
     
-    # Recode Behavioral Issues (k2q34b)
-    Behavioral_Issues = factor(k2q34b, levels = c(2, 1), labels = c("No", "Yes"))
+    # Recode Behavioral Problems (k2q34b)
+    Behavioral_Problems = factor(k2q34b, levels = c(2, 1), labels = c("No", "Yes"))
   )
 
 # Recode education and income categories
@@ -248,7 +248,8 @@ prevalences <- colSums(neurodivergent_data[variables] == 1, na.rm = TRUE) / tota
 prevalence_table <- data.frame(Diagnosis = variable_names, Prevalence = prevalences)
 
 # Display prevalence data in a table
-knitr::kable(prevalence_table, "html", caption = "Prevalence of Neurodivergent Conditions") %>%
+prevalence_table %>% 
+  knitr::kable("html", caption = "Prevalence of Neurodivergent Conditions") %>% 
   kableExtra::footnote(general = "Prevalence values are presented as percentages for neurodevelopmental disorder diagnosis.")
 
 ```
@@ -374,12 +375,12 @@ neurodiv_freq_table <- neurodivergent_data %>%
   dplyr::summarise(
     Anxiety_Yes = sum(Anxiety == "Yes", na.rm = TRUE),
     Depression_Yes = sum(Depression == "Yes", na.rm = TRUE),
-    Behavioral_Issues_Yes = sum(Behavioral_Issues == "Yes", na.rm = TRUE)
+    Behavioral_Problems_Yes = sum(Behavioral_Problems == "Yes", na.rm = TRUE)
   )
 
 # Display table in a simple HTML format using kable
 neurodiv_freq_table %>%
-  knitr::kable("html", col.names = c("Anxiety", "Depression", "Behavioral Issues"), 
+  knitr::kable("html", col.names = c("Anxiety", "Depression", "Behavioral Problems"), 
                caption = "Frequency of Mental Health Conditions in Neurodivergent Sample")
 
 ```
@@ -406,9 +407,9 @@ ace_totals <- c(
 
 # Compute the cross-tabulations, filtering out NA values and excluding "No" responses for Anxiety, Depression, and Behavioral Issues # <1>
 cross_tabs <- neurodivergent_data %>%
-  select(Anxiety, Depression, Behavioral_Issues, CFI_dich, ace_counts) %>%
-  pivot_longer(cols = c(Anxiety, Depression, Behavioral_Issues, CFI_dich), names_to = "Condition", values_to = "Status") %>%
-  filter(!is.na(Status), !is.na(ace_counts), !(Condition %in% c("Anxiety", "Depression", "Behavioral_Issues") & Status == "No")) %>%  # Filter out NA values and "No" responses
+  select(Anxiety, Depression, Behavioral_Problems, CFI_dich, ace_counts) %>%
+  pivot_longer(cols = c(Anxiety, Depression, Behavioral_Problems, CFI_dich), names_to = "Condition", values_to = "Status") %>%
+  filter(!is.na(Status), !is.na(ace_counts), !(Condition %in% c("Anxiety", "Depression", "Behavioral_Problems") & Status == "No")) %>%  # Filter out NA values and "No" responses
   group_by(Condition, Status, ace_counts) %>%
   summarise(n = n(), .groups = "drop") %>%
   group_by(Condition, Status) %>%
@@ -448,7 +449,7 @@ model_anx <- glm(Anxiety ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + hig
 model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
                data = neurodivergent_data, family = binomial)
 
-model_beh <- glm(Behavioral_Issues ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
+model_beh <- glm(Behavioral_Problems ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
                data = neurodivergent_data, family = binomial)
 
 # Create a summary table for the Anixety model
@@ -473,7 +474,7 @@ tbl_dep <- tbl_regression(model_dep, exponentiate = TRUE, label = list(
     )) |>
   bold_p(t = 0.05)
 
-# Create a summary table for the Behavioral Issues model
+# Create a summary table for the Behavioral Problems model
 tbl_beh <- tbl_regression(model_beh, exponentiate = TRUE, label = list(
       ace_counts ~ "ACEs",
       fpl_cat ~ "Federal Poverty Level",
@@ -487,7 +488,7 @@ tbl_beh <- tbl_regression(model_beh, exponentiate = TRUE, label = list(
 # Merge all tables into one
 tbl_merged <- tbl_merge(
   tbls = list(tbl_anx, tbl_dep, tbl_beh),
-  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Issues Model")
+  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Problems Model")
 )
 
 # Display the combined table
@@ -497,7 +498,7 @@ tbl_merged
 
 Generate a combined plot showing the odds ratios from three separate logistic regression models (Anxiety, Depression, and Behavioral Issues). Configure the figure dimensions to 8x8, with confidence intervals (95%) and p-values displayed. Use different markers and colors for each model, set axis limits between 0.2 and 5, and include a legend labeling each model accordingly.
 
-```{r Odds Ratio Plots, fig.dim = c(8, 8), message=FALSE, warning=FALSE}
+```{r Odds Ratio Plots Non-Interaction Models, fig.dim = c(8, 8), message=FALSE, warning=FALSE}
 # Combine the plots into a list vector
 all.models <- list()
 all.models[[1]] <- model_anx
@@ -505,7 +506,7 @@ all.models[[2]] <- model_dep
 all.models[[3]] <- model_beh
 
 # Plot the combined version
-plot_models(all.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Model", legend.title = "Model", m.labels = c("Anxiety", "Depression", "Behavioral Issues"))
+plot_models(all.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Model", legend.title = "Model", m.labels = c("Anxiety", "Depression", "Behavioral Problems"))
 
 ```
 
@@ -545,10 +546,10 @@ tbl_dep_mod <- tbl_regression(model_dep_mod, exponentiate = FALSE, label = list(
     )) |>
   bold_p(t = 0.05)
 
-# Logistic regression model with CFI_dich as a moderator for Behavioral Issues
-model_beh_mod <- glm(Behavioral_Issues ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
+# Logistic regression model with CFI_dich as a moderator for Behavioral Problems
+model_beh_mod <- glm(Behavioral_Problems ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
 
-# Create a summary table for the Behavioral Issues model # <3>
+# Create a summary table for the Behavioral Problems model # <3>
 tbl_beh_mod <- tbl_regression(model_beh_mod, exponentiate = FALSE, label = list( 
       ace_counts ~ "ACEs",
       CFI_dich ~ "Child Flourishing Index",
@@ -563,7 +564,7 @@ tbl_beh_mod <- tbl_regression(model_beh_mod, exponentiate = FALSE, label = list(
 # Merge all tables into one
 mod_tbl_merged <- tbl_merge(
   tbls = list(tbl_anx_mod, tbl_dep_mod, tbl_beh_mod),
-  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Issues Model")
+  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Problems Model")
 )
 
 # Display the combined table
@@ -573,65 +574,113 @@ mod_tbl_merged
 
 1. The interaction **anxiety** model **did not** yield significant findings, so we **do not** proceed with post-hoc analyses.
 2. The interaction **depression** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
-3. The interaction **behavioral issues** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
+3. The interaction **behavioral problems** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
 
-To be edited.
+Subset the data into flourishing and non-flourishing groups. Then, run logistic regression models for Depression and Behavioral Problems separately for each group, adjusting for covariates (ACE counts, race, sex, SES, education, and age). Create summary tables for each model, with p-values highlighted for significance. Finally, merge and display the tables for both flourishing and non-flourishing samples, stratified by Depression and Behavioral Problems.
 
 ```{r Post-Hoc Analyses, message=FALSE, warning=FALSE}
-# Create a summary table for the Depression model
-tbl_dep <- model_dep_mod |> 
-  tbl_regression(
-    tidy_fun = tidy_margins,
-    estimate_fun = scales::label_percent(style_positive = "plus"),
-    label = list(
+# Subset the flourishing sample
+flourishing_sample <- neurodivergent_data %>%
+  filter(CFI_dich == "Flourishing")
+
+# Subset the not flourishing sample
+not_flourishing_sample <- neurodivergent_data %>%
+  filter(CFI_dich == "Not Flourishing")
+
+# Stratified logistic regression models
+flourish_model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = flourishing_sample, family = binomial)
+
+non_flourish_model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = not_flourishing_sample, family = binomial)
+
+flourish_model_beh <- glm(Behavioral_Problems ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = flourishing_sample, family = binomial)
+
+non_flourish_model_beh <- glm(Behavioral_Problems ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = not_flourishing_sample, family = binomial)
+
+# Create a summary table for the Flourishing Depression model
+tbl_dep_flourish <- tbl_regression(flourish_model_dep, exponentiate = TRUE, label = list(
       ace_counts ~ "ACEs",
-      CFI_dich ~ "Child Flourishing Index",
       fpl_cat ~ "Federal Poverty Level",
       highgrade_tvis_cat ~ "Caregiver Education",
       sc_age_years ~ "Child Age",
       sc_race_cat ~ "Child Race",
       sc_sex_cat ~ "Child Sex"
-    )
-  ) |>
-  bold_p(t = 0.05) |>  # Bold significant p-values
-  modify_header(label = "**Variable**") |>  # Adjust the header for the variable column
-  modify_spanning_header(c(estimate, ci, p.value) ~ "**Depression Model**") |>  # Custom header
-  bold_labels()  # Bold variable labels
+    )) |>
+  bold_p(t = 0.05)
 
-# Create a summary table for the Behavioral Issues model
-tbl_beh <- model_beh_mod |> 
-  tbl_regression(
-    tidy_fun = tidy_margins,
-    estimate_fun = scales::label_percent(style_positive = "plus"),
-    label = list(
+# Create a summary table for the Non-Flourishing Depression model
+tbl_dep_non_flourish <- tbl_regression(non_flourish_model_dep, exponentiate = TRUE, label = list(
       ace_counts ~ "ACEs",
-      CFI_dich ~ "Child Flourishing Index",
       fpl_cat ~ "Federal Poverty Level",
       highgrade_tvis_cat ~ "Caregiver Education",
       sc_age_years ~ "Child Age",
       sc_race_cat ~ "Child Race",
       sc_sex_cat ~ "Child Sex"
-    )
-  ) |>
-  bold_p(t = 0.05) |>  # Bold significant p-values
-  modify_header(label = "**Variable**") |>  # Adjust the header for the variable column
-  modify_spanning_header(c(estimate, ci, p.value) ~ "**Behavioral Issues Model**") |>  # Custom header
-  bold_labels()  # Bold variable labels
+    )) |>
+  bold_p(t = 0.05)
 
-# Merge all tables into one
-tbl_combined <- tbl_merge(
-  tbls = list(tbl_dep, tbl_beh),
-  tab_spanner = c("Depression Model", "Behavioral Issues Model")
+# Create a summary table for the Flourishing Behavioral Problems model
+tbl_beh_flourish <- tbl_regression(flourish_model_beh, exponentiate = TRUE, label = list(
+      ace_counts ~ "ACEs",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
+
+# Create a summary table for the Non-Flourishing Behavioral Problems model
+tbl_beh_non_flourish <- tbl_regression(non_flourish_model_beh, exponentiate = TRUE, label = list(
+      ace_counts ~ "ACEs",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) |>
+  bold_p(t = 0.05)
+
+# Merge the flourishing model tables into one
+flourish_tbl_combined <- tbl_merge(
+  tbls = list(tbl_dep_flourish, tbl_beh_flourish),
+  tab_spanner = c("Depression Model", "Behavioral Problems Model")
 )
 
-# Display the combined table
-tbl_combined
+# Display the combined flourishing model tables
+flourish_tbl_combined
 
-# Plot marginal effects for the Depression model
-plot_model(model_dep_mod, type = "int", title = "Interaction: ace_counts * CFI_dich (Depression)")
+# Merge the non-flourishing model tables into one
+non_flourish_tbl_combined <- tbl_merge(
+  tbls = list(tbl_dep_non_flourish, tbl_beh_non_flourish),
+  tab_spanner = c("Depression Model", "Behavioral Problems Model")
+)
 
-# Plot marginal effects for the Behavioral Issues model
-plot_model(model_beh_mod, type = "int", title = "Interaction: ace_counts * CFI_dich (Behavioral Issues)")
+# Display the combined non-flourishing model tables
+non_flourish_tbl_combined
+
+```
+
+Generate odds ratio plots for Depression and Behavioral Problems stratified by flourishing status. First, create separate plots for the flourishing group and the non-flourishing group, adjusting the x-axis limits, confidence intervals, and dot size. The plots are combined for each group to visualize the odds ratios for the Depression and Behavioral Problems models, and labeled accordingly for each condition within both flourishing and non-flourishing samples.
+
+```{r Odds Ratio Plots Stratified Models, fig.dim = c(8, 8), message=FALSE, warning=FALSE}
+#| column: screen
+#| out-width: 100%
+
+# Combine the flourishing plots into a list vector
+all.flourish.models <- list()
+all.flourish.models[[1]] <- flourish_model_dep
+all.flourish.models[[2]] <- flourish_model_beh
+
+# Plot the combined version
+plot_models(all.flourish.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Flourishing Stratified Model", legend.title = "Model", m.labels = c("Depression", "Behavioral Problems"))
+
+# Combine the non-flourishing plots into a list vector
+all.non.flourish.models <- list()
+all.non.flourish.models[[1]] <- non_flourish_model_dep
+all.non.flourish.models[[2]] <- non_flourish_model_beh
+
+# Plot the combined version
+plot_models(all.flourish.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Non-Flourishing Stratified Model", legend.title = "Model", m.labels = c("Depression", "Behavioral Problems"))
 
 ```
 
