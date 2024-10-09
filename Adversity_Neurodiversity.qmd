@@ -67,7 +67,7 @@ if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
 # Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable)
+p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable, DiagrammeR)
 
 # Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
 base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
@@ -681,6 +681,35 @@ all.non.flourish.models[[2]] <- non_flourish_model_beh
 
 # Plot the combined version
 plot_models(all.flourish.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Non-Flourishing Stratified Model", legend.title = "Model", m.labels = c("Depression", "Behavioral Problems"))
+
+```
+
+```{r Visual Diagram Schematic, message=FALSE, warning=FALSE}
+# Create a diagram representing the analysis flow
+diagram <- grViz("
+  digraph flowchart {
+  
+    # Node definitions
+    node [shape = box, style = filled, fillcolor = lightgrey, fontname = Helvetica]
+    X [label = 'Adverse Childhood Experiences', width = 2]
+    Y [label = 'Anxiety, Depression, & Behavioral Problems', width = 2]
+    W [label = 'Child Flourishing', shape = box, style = filled, fillcolor = lightgrey, fontname = Helvetica]
+    Interaction [label = 'ACEs * Child Flourishing Interaction', shape = box, style = filled, fillcolor = lightgrey, fontname = Helvetica]
+
+    # Define edge connections
+    X -> Y [label = 'a: ##']
+    W -> Y [label = 'b: ##']
+    Interaction -> Y [label = 'c: ##']  # Interaction effect
+    X -> Interaction [label = '', style = invis]
+    W -> Interaction [label = '', style = invis]
+  
+    # Graph layout
+    rankdir = LR;  # Left to right layout
+  }
+")
+
+# Render the diagram
+diagram
 
 ```
 
