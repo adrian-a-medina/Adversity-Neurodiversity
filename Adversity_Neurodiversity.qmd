@@ -95,7 +95,8 @@ neurodivergent_data <- Data2_2016to2022 %>%
   select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis, k2q35a, k2q35c, k2q38a,
          k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, k2q37a, k2q37c, downsyn, downsyn_desc, 
          k2q31a, k2q31c, k2q61a, cerpals_desc, k2q33a, k2q33b, k2q33c, k2q32a, k2q32b, k2q32c, k2q34a, k2q34b, k2q34c, 
-         ace1, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, ace11, ace12, k6q71_r, k7q85_r, k7q84_r) %>%
+         ace1, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, ace11, ace12, k6q71_r, k7q85_r, k7q84_r, talkabout,
+         wktosolve, strengths, hopeful, k8q21, k8q30, fwc) %>%
   # Creating 'neurodivergent' variable as NSCH does not explicitly inquire about neurodivergent status.
   # Using a list of diagnoses provided by NSCH to define neurodivergent individuals.
   mutate(neurodivergent = if_else(k2q35a == 1 | k2q38a == 1 | k2q36a == 1 | k2q60a == 1 | 
