@@ -9,6 +9,9 @@ format:
     self-contained: true
     is-particlejs-enabled: true
     code-summary: "Expand Code"
+include-in-header:
+  - text: |
+     <link rel = "shortcut icon" href = "Logo_Favicon.svg" />
 author: Adrián Medina
 date: last-modified
 ---
