@@ -45,16 +45,6 @@ The study aims to:
 For detailed information on the dataset variables, refer to the [[**NSCH Data Dictionary**]{.underline}](https://www.census.gov/data-tools/demo/uccb/nschdict?s_keyword=).
 :::
 
-# Code Workflow {#code-workflow}
-
-------------------------------------------------------------------------
-
-1.  [Data Frame Initialization](#data-frame-initialization)
-2.  [Analytic Data Preparation](#analytic-data-preparation)
-3.  [Frequencies & Descriptive Statistics](#frequencies-descriptive-statistics)
-4.  [Inferential Statistics](#inferential-statistics)
-5.  [Session Information](#session-information)
-
 # Data Frame Initialization {#data-frame-initialization}
 
 ------------------------------------------------------------------------
@@ -70,7 +60,7 @@ if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
 # Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable, DiagrammeR)
+p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable, DiagrammeR, survey)
 
 # Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
 base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
@@ -145,6 +135,33 @@ neurodivergent_data <- neurodivergent_data %>%
       TRUE ~ NA_character_
     ),
     CFI_dich = factor(CFI_dich, levels = c("Not Flourishing", "Flourishing")) # Recreate 'CFI_dich' factor
+  )
+
+# Calculate and recode Family Resilience and Connection Index (FRCI)
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Recode the four FRI items: assign 1 point for "All of the time" (response code 1)
+    talkabout_score = ifelse(talkabout == 1, 1, 0),
+    wktosolve_score = ifelse(wktosolve == 1, 1, 0),
+    strengths_score = ifelse(strengths == 1, 1, 0),
+    hopeful_score = ifelse(hopeful == 1, 1, 0),
+    
+    # Recode the two additional items: assign 1 point for "Very well" (response code 1)
+    k8q21_score = ifelse(k8q21 == 1, 1, 0),
+    k8q30_score = ifelse(k8q30 == 1, 1, 0),
+    
+    # Calculate the total FRCI score by summing all six items
+    FRCI = talkabout_score + wktosolve_score + strengths_score + hopeful_score + k8q21_score + k8q30_score,
+    
+    # Create a categorical version of FRCI
+    FRCI_cat = factor(
+      case_when(
+        FRCI <= 1 ~ "0-1",
+        FRCI <= 3 ~ "2-3",
+        FRCI <= 6 ~ "4-6"
+      ),
+      levels = c("0-1", "2-3", "4-6")
+    )
   )
 
 # Recode binary outcomes for anxiety, depression, and behavioral issues into factors
@@ -229,7 +246,7 @@ neurodivergent_data <- neurodivergent_data %>%
 ```
 
 1.  `ace1` is originally coded by NSCH as a frequency measure, but it's needed as indicative variable of presence like the other `ace#` variables.
-2.  Part of this includes the calculating of the Childhood Flourishing Index (CFI) based on Bethell et al. (2019) criteria
+2.  Part of this includes the calculating of the Childhood Flourishing Index (CFI) and the Family Resilience and Connection Index (FRCI) based on Bethell et al. (2019) criteria
 
 # Frequencies & Descriptive Statistics {#frequencies-descriptive-statistics}
 
@@ -434,13 +451,13 @@ cross_tabs %>%
 
 ```
 
-1. Cross-tabulations (or contingency tables) summarize the relationship between two or more categorical variables. In this case, I'm exploring how the mental health conditions (Anxiety, Depression, Behavioral Issues) and Child Flourishing Index (CFI) are distributed across different levels of ACEs.
+1.  Cross-tabulations (or contingency tables) summarize the relationship between two or more categorical variables. In this case, I'm exploring how the mental health conditions (Anxiety, Depression, Behavioral Issues) and Child Flourishing Index (CFI) are distributed across different levels of ACEs.
 
 # Inferential Statistics {#inferential-statistics}
 
 ------------------------------------------------------------------------
 
-Run three separate logistic regression models to examine the effects of ACE counts, race, sex, socioeconomic status, caregiver education, and child age on Anxiety, Depression, and Behavioral Issues outcomes. Present the exponentiated coefficients (odds ratios) and bold significant p-values (p < 0.05). Merge the summary tables of all three models into one, with each model labeled appropriately for clear comparison.
+Run three separate logistic regression models to examine the effects of ACE counts, race, sex, socioeconomic status, caregiver education, and child age on Anxiety, Depression, and Behavioral Issues outcomes. Present the exponentiated coefficients (odds ratios) and bold significant p-values (p \< 0.05). Merge the summary tables of all three models into one, with each model labeled appropriately for clear comparison.
 
 ```{r Logistic Regression Models, message=FALSE, warning=FALSE}
 #| column: screen
@@ -576,9 +593,9 @@ mod_tbl_merged
 
 ```
 
-1. The interaction **anxiety** model **did not** yield significant findings, so we **do not** proceed with post-hoc analyses.
-2. The interaction **depression** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
-3. The interaction **behavioral problems** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
+1.  The interaction **anxiety** model **did not** yield significant findings, so we **do not** proceed with post-hoc analyses.
+2.  The interaction **depression** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
+3.  The interaction **behavioral problems** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
 
 Subset the data into flourishing and non-flourishing groups. Then, run logistic regression models for Depression and Behavioral Problems separately for each group, adjusting for covariates (ACE counts, race, sex, SES, education, and age). Create summary tables for each model, with p-values highlighted for significance. Finally, merge and display the tables for both flourishing and non-flourishing samples, stratified by Depression and Behavioral Problems.
 
@@ -718,15 +735,18 @@ diagram
 ```
 
 # Session Information {#session-information}
-***
+
+------------------------------------------------------------------------
 
 To enhance **reproducibility**, details about the **working environment** used for these analyses can be found below.
 
 <button type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
 
-Session Information </button>
+Session Information
 
-::: {#collapseOne .accordion-collapse .collapse}
+</button>
+
+:::: {#collapseOne .accordion-collapse .collapse}
 <div>
 
 ```{r}
@@ -734,4 +754,4 @@ sessionInfo()
 ```
 
 </div>
-:::
+::::
