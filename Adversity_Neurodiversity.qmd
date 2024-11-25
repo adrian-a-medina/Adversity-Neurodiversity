@@ -51,7 +51,7 @@ For detailed information on the dataset variables, refer to the [[**NSCH Data Di
 
 Set up the R environment by configuring the CRAN repository, installing essential packages, setting the base path, and loading the primary dataset into the local environment.
 
-```{r Install & Load Necessary Packages, message = FALSE, warning = FALSE}
+```{r setup, message = FALSE, warning = FALSE}
 # Set CRAN repository for consistent package installation
 options(repos = c(CRAN = "http://cran.rstudio.com/"))
 
@@ -60,7 +60,7 @@ if (!require(pacman)) install.packages("pacman")
 library(pacman)
 
 # Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable, DiagrammeR, survey)
+p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable, DiagrammeR, survey, sandwich, lmtest)
 
 # Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
 base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
@@ -74,11 +74,13 @@ neurodivergent_data <- read_csv("neurodivergent_data.csv") # <1>
 1.  See details under the `Data Extraction & Filtering (Archived Code)` callout below!
 
 ::: callout-important
-### Data Extraction & Filtering (Archived Code)
+## Data Extraction & Filtering (Archived Code)
 
 The file being used for these analyses is a subset of a "master" file, `Data2_2016to2022.csv`, containing the compiled contents of the data releases from the National Survey on Child Health's 2016-2022 cycles. The master file is nearly 500 MB (0.5 GB) in size, making it cumbersome to process in real-time. For efficiency and ease of analysis, I am using a smaller subset that contains only the relevant data. This subset was generated using the data extraction and filtering process detailed in the archived code below, in an effort to maintain transparency and ensure reproducibility of the workflow.
 
-```{r Archived Data Extraction, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
+Additionally, data from the NSCH 2023 was also later merged into the subset file being used for this analyses. The code for the extraction/wrangling process is shown below.
+
+```{r archived-data-extraction-2016-2022, eval=FALSE, message=FALSE, warning=FALSE}
 # Define the path to the dataset
 data_path <- "~/Downloads/Data2_2016to2022.csv"  
 Data2_2016to2022 <- read.csv(data_path)
@@ -99,7 +101,45 @@ neurodivergent_data <- Data2_2016to2022 %>%
   filter(sc_age_years >= 6, neurodivergent == 1)
 
 # Resulting filtered data to be used for further analysis
-write.csv(neurodivergent_data, "neurodivergent_data.csv")
+write.csv(neurodivergent_data, "neurodivergent_data_2016to2022.csv")
+
+```
+
+```{r archived-data-extraction-2023, eval=FALSE, message=FALSE, warning=FALSE}
+# Define the path to the dataset
+data_path <- "~/Downloads/nsch_2023e_topical.csv"  
+nsch_data <- read.csv(data_path)
+
+# Create a new variable 'fpl_mean' representing the average of specific columns
+nsch_data <- nsch_data %>%
+  mutate(fpl_mean = rowMeans(select(., fpl_i1, fpl_i2, fpl_i3, fpl_i4, fpl_i5, fpl_i6), na.rm = TRUE))
+
+# Select specific variables, create 'neurodivergent' variable, & filter data based on age and neurodivergent status (manually added in blank columns fpl and downsyn_desc)
+neurodivergent_data_23 <- nsch_data %>%
+  select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis, k2q35a, k2q35c, k2q38a,
+         k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, k2q37a, k2q37c, downsyn, downsyn_desc, 
+         k2q31a, k2q31c, k2q61a, cerpals_desc, k2q33a, k2q33b, k2q33c, k2q32a, k2q32b, k2q32c, k2q34a, k2q34b, k2q34c, 
+         ace1, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, ace11, ace12, k6q71_r, k7q85_r, k7q84_r, talkabout,
+         wktosolve, strengths, hopeful, k8q21, k8q30, fwc) %>%
+  # Creating 'neurodivergent' variable as NSCH does not explicitly inquire about neurodivergent status.
+  # Using a list of diagnoses provided by NSCH to define neurodivergent individuals.
+  mutate(neurodivergent = if_else(k2q35a == 1 | k2q38a == 1 | k2q36a == 1 | k2q60a == 1 | 
+                                  k2q37a == 1 | k2q30a == 1 | downsyn == 1 | 
+                                  k2q31a == 1 | k2q61a == 1, 1, 0)) %>%
+  # Filter data to include only individuals aged 6 or above and identified as neurodivergent
+  filter(sc_age_years >= 6, neurodivergent == 1)
+
+# Resulting filtered data to be used for further analysis
+write.csv(neurodivergent_data_23, "neurodivergent_data_2023.csv")
+
+# Read in prior years of neurodivergent data
+neurodivergent_data_16to22 <- read.csv("neurodivergent_data_2016to2022.csv")
+
+# Merge two data frames with identical columns
+neurodivergent_data_16to23 <- rbind(neurodivergent_data_16to22, neurodivergent_data_23)
+
+# Write the merged data frame into a CSV file
+write.csv(neurodivergent_data_16to23, "neurodivergent_data_2016to2023.csv", row.names = FALSE)
 
 ```
 :::
@@ -110,7 +150,7 @@ write.csv(neurodivergent_data, "neurodivergent_data.csv")
 
 Recode analytic variables and covariates, including ACE counts, Childhood Flourishing Index (CFI), binary outcomes (anxiety, depression, behavioral issues), education, income, sex, and race/ethnicity variables into categorical factors for analysis.
 
-```{r Recoding Analytic Variables & Covariates, message=FALSE, warning=FALSE}
+```{r recoding-analytic-variables, message=FALSE, warning=FALSE}
 # Recode 'ace1' to dichotomous variable based on analytic specifications # <1>
 neurodivergent_data$ace1_recode <- ifelse(neurodivergent_data$ace1 %in% c(2, 3, 4), 1, 
                                           ifelse(neurodivergent_data$ace1 == 1, 0, NA))
@@ -140,18 +180,18 @@ neurodivergent_data <- neurodivergent_data %>%
 # Calculate and recode Family Resilience and Connection Index (FRCI)
 neurodivergent_data <- neurodivergent_data %>%
   mutate(
-    # Recode the four FRI items: assign 1 point for "All of the time" (response code 1)
-    talkabout_score = ifelse(talkabout == 1, 1, 0),
-    wktosolve_score = ifelse(wktosolve == 1, 1, 0),
-    strengths_score = ifelse(strengths == 1, 1, 0),
-    hopeful_score = ifelse(hopeful == 1, 1, 0),
+    # Recode the four FRI items: assign 1 point for "All of the time" (response code 1), handling missing values
+    talkabout_score = ifelse(is.na(talkabout), NA, ifelse(talkabout == 1, 1, 0)),
+    wktosolve_score = ifelse(is.na(wktosolve), NA, ifelse(wktosolve == 1, 1, 0)),
+    strengths_score = ifelse(is.na(strengths), NA, ifelse(strengths == 1, 1, 0)),
+    hopeful_score = ifelse(is.na(hopeful), NA, ifelse(hopeful == 1, 1, 0)),
     
-    # Recode the two additional items: assign 1 point for "Very well" (response code 1)
-    k8q21_score = ifelse(k8q21 == 1, 1, 0),
-    k8q30_score = ifelse(k8q30 == 1, 1, 0),
+    # Recode the two additional items: assign 1 point for "Very well" (response code 1), handling missing values
+    k8q21_score = ifelse(is.na(k8q21), NA, ifelse(k8q21 == 1, 1, 0)),
+    k8q30_score = ifelse(is.na(k8q30), NA, ifelse(k8q30 == 1, 1, 0)),
     
-    # Calculate the total FRCI score by summing all six items
-    FRCI = talkabout_score + wktosolve_score + strengths_score + hopeful_score + k8q21_score + k8q30_score,
+    # Calculate the total FRCI score by summing all six items, ignoring missing values
+    FRCI = rowSums(across(c(talkabout_score, wktosolve_score, strengths_score, hopeful_score, k8q21_score, k8q30_score)), na.rm = TRUE),
     
     # Create a categorical version of FRCI
     FRCI_cat = factor(
@@ -254,7 +294,7 @@ neurodivergent_data <- neurodivergent_data %>%
 
 Calculate the prevalence of neurodevelopmental disorder (NDD) diagnoses by defining the relevant variables, computing the number of total respondents for each variable, and determining the percentage of diagnoses. Display the results in a table with a table note explaining the presentation format.
 
-```{r Neurodevelopmental Disorder Diagnoses, message=FALSE, warning=FALSE}
+```{r neurodevelopmental-disorder-diagnoses, message=FALSE, warning=FALSE}
 # Calculate prevalence (%) of NDD diagnoses among subject sample
 variables <- c("k2q31a", "k2q35a", "k2q38a", "k2q30a", "k2q36a", "k2q60a", "k2q37a", "downsyn", "k2q61a")
 variable_names <- c("ADHD", "Autism/ASD", "Tourette’s Syndrome", "Learning Disability", 
@@ -277,7 +317,7 @@ prevalence_table %>%
 
 Summarize key demographic characteristics of the neurodivergent sample, including descriptive statistics for age, educational attainment, sex, socioeconomic status, and race. Display the results in a table and visualize distributions using raincloud and bar plots for each demographic variable.
 
-```{r Subject Demographics, message=FALSE, warning=FALSE}
+```{r subject-demograpghics, message=FALSE, warning=FALSE}
 # Calculate descriptives of age for neurodivergent participants
 neurodiv_age_summary <- neurodivergent_data %>%
   dplyr::summarise(
@@ -359,7 +399,7 @@ ggplot(neurodivergent_data, aes(x = sc_race_cat)) +
 
 Calculate and display the number of subjects classified as 'Flourishing' based on a Childhood Flourishing Index (CFI) score of 3. Visualize the distribution of children by CFI score using bar plots for both the raw CFI scores and the dichotomized CFI variable.
 
-```{r Child Flourishing Index, message=FALSE, warning=FALSE}
+```{r child-flourishing-index, message=FALSE, warning=FALSE}
 # Count the number of subjects with a CFI score of 3 using a logical condition, as this is considered 'Flourishing.'
 num_subjects_cfi_3 <- sum(neurodivergent_data$CFI == 3, na.rm = TRUE)
 cat("Number of Subjects Flourishing (CFI Score of 3):", num_subjects_cfi_3, "\n")
@@ -388,9 +428,36 @@ ggplot(neurodivergent_data, aes(x = CFI_dich)) +
 
 ```
 
+Display the number of subjects in each Family Resilience and Connection Index (FRCI) score category. Visualize the distribution of children by FRCI score using bar plots for both the raw FRCI scores and the categorized FRCI variable.
+
+```{r family-resilience-connection-index, message=FALSE, warning=FALSE}
+# Bar plot of FRCI counts categories
+ggplot(neurodivergent_data, aes(x = factor(FRCI), fill = factor(FRCI))) +
+  geom_bar(show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
+  labs(x = "Family Resilience and Connection Index (FRCI) Score",
+       y = "Number of Children",
+       fill = "FRCI Score",
+       title = "Distribution of Children by FRCI Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0))
+
+# Bar plot of FRCI_cat counts categories
+ggplot(neurodivergent_data, aes(x = FRCI_cat)) +
+  geom_bar(aes(fill = FRCI_cat), show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
+  labs(title = "Distribution of FRCI Categorical Variable",
+       x = "Family Resilience and Connection Index (Categorical)",
+       y = "Count",
+       fill = "FRCI") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0))
+
+```
+
 Construct and display a frequency table that shows the number of participants with Anxiety, Depression, and Behavioral Issues based on responses indicating "Yes" for each condition. Present the results in an HTML table format using `kable`.
 
-```{r Mental Health Outcomes, message=FALSE, warning=FALSE}
+```{r mental-health-outcomes, message=FALSE, warning=FALSE}
 # Constructing the frequency table for Anxiety, Depression, and Behavioral Issues where the response is "Yes"
 neurodiv_freq_table <- neurodivergent_data %>%
   dplyr::summarise(
@@ -408,7 +475,7 @@ neurodiv_freq_table %>%
 
 Visualize the distribution of ACE counts among children using a bar plot and calculate cross-tabulations for the number and percentage of participants with Anxiety, Depression, Behavioral Issues, and Flourishing status across ACE categories. Format the table to display values as "n (percentage)" for each ACE category and include a footnote explaining the presentation format.
 
-```{r ACEs and Cross Tabulations, message=FALSE, warning=FALSE}
+```{r aces-cross-tabulations, message=FALSE, warning=FALSE}
 # Bar plot of ACE counts categories
 ggplot(neurodivergent_data, aes(x = factor(ace_counts), fill = factor(ace_counts))) +
   geom_bar(show.legend = FALSE) +
@@ -457,91 +524,115 @@ cross_tabs %>%
 
 ------------------------------------------------------------------------
 
-Run three separate logistic regression models to examine the effects of ACE counts, race, sex, socioeconomic status, caregiver education, and child age on Anxiety, Depression, and Behavioral Issues outcomes. Present the exponentiated coefficients (odds ratios) and bold significant p-values (p \< 0.05). Merge the summary tables of all three models into one, with each model labeled appropriately for clear comparison.
+## Interaction Models
 
-```{r Logistic Regression Models, message=FALSE, warning=FALSE}
-#| column: screen
-#| out-width: 100%
+Run logistic regression models that incorporate interaction terms between the ACE counts and the Child Flourishing Index (`CFI_dich`) for three different mental health outcomes (Anxiety, Depression, Behavioral Issues). Then, create individual summary tables for each model (without exponentiating the coefficients), highlighting statistically significant p-values. Finally, merge the tables into a single output, displaying all models side by side with appropriate labels and formatting.
 
-# Logistic regression models without interactions
-model_anx <- glm(Anxiety ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-               data = neurodivergent_data, family = binomial)
+::: {.panel-tabset .nav-pills}
+### Anxiety Model
 
-model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-               data = neurodivergent_data, family = binomial)
+```{r anxiety-flourishing-model, message=FALSE, warning=FALSE}
+# Create survey design object with Final Weight for Child (FWC) as weights
+design <- svydesign(ids = ~1, weights = ~fwc, data = neurodivergent_data) # will be used across all models
 
-model_beh <- glm(Behavioral_Problems ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years,
-               data = neurodivergent_data, family = binomial)
+# Logistic regression model with CFI_dich as a moderator for Anxiety, using robust standard errors
+model_anx_mod <- svyglm(Anxiety ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, 
+                        design = design, family = quasibinomial())
 
-# Create a summary table for the Anixety model
-tbl_anx <- tbl_regression(model_anx, exponentiate = TRUE, label = list(
+# Perform the Breusch-Pagan test for heteroscedasticity
+lmtest::bptest(model_anx_mod)
+
+# Calculate Cook's distance for influential observations (leverage) in each model
+cooks_anx <- cooks.distance(model_anx_mod)
+
+# Plot for Anxiety model
+plot(cooks_anx, type = "h", main = "Cook's Distance for Anxiety Model",
+     ylab = "Cook's Distance", xlab = "Observation Index")
+abline(h = 4 / length(cooks_d_dan), col = "red", lty = 2)  # Add a reference line for influential points
+
+# Obtain robust standard errors for Anxiety model
+robust_anx <- lmtest::coeftest(model_anx_mod, vcov = vcovHC(model_anx_mod, type = "HC3"))
+
+# Create a summary table for the Anxiety model with robust standard errors
+tbl_anx_mod <- tbl_regression(model_anx_mod, exponentiate = TRUE, label = list(
       ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
       fpl_cat ~ "Federal Poverty Level",
       highgrade_tvis_cat ~ "Caregiver Education",
       sc_age_years ~ "Child Age",
       sc_race_cat ~ "Child Race",
       sc_sex_cat ~ "Child Sex"
-    )) |>
+    )) %>%
   bold_p(t = 0.05)
 
-# Create a summary table for the Depression model
-tbl_dep <- tbl_regression(model_dep, exponentiate = TRUE, label = list(
-      ace_counts ~ "ACEs",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
-      sc_age_years ~ "Child Age",
-      sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
-
-# Create a summary table for the Behavioral Problems model
-tbl_beh <- tbl_regression(model_beh, exponentiate = TRUE, label = list(
-      ace_counts ~ "ACEs",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
-      sc_age_years ~ "Child Age",
-      sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
-
-# Merge all tables into one
-tbl_merged <- tbl_merge(
-  tbls = list(tbl_anx, tbl_dep, tbl_beh),
-  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Problems Model")
-)
-
-# Display the combined table
-tbl_merged
+# Print table to review results # <1>
+tbl_anx_mod
 
 ```
 
-Generate a combined plot showing the odds ratios from three separate logistic regression models (Anxiety, Depression, and Behavioral Issues). Configure the figure dimensions to 8x8, with confidence intervals (95%) and p-values displayed. Use different markers and colors for each model, set axis limits between 0.2 and 5, and include a legend labeling each model accordingly.
+### Depression Model
 
-```{r Odds Ratio Plots Non-Interaction Models, fig.dim = c(8, 8), message=FALSE, warning=FALSE}
-# Combine the plots into a list vector
-all.models <- list()
-all.models[[1]] <- model_anx
-all.models[[2]] <- model_dep
-all.models[[3]] <- model_beh
+```{r depression-flourishing-model, message=FALSE, warning=FALSE}
+# Logistic regression model with CFI_dich as a moderator for Depression, using robust standard errors
+model_dep_mod <- svyglm(Depression ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + 
+                        sc_age_years, 
+                        design = design, family = quasibinomial())
 
-# Plot the combined version
-plot_models(all.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Model", legend.title = "Model", m.labels = c("Anxiety", "Depression", "Behavioral Problems"))
+# Perform the Breusch-Pagan test for heteroscedasticity
+lmtest::bptest(model_dep_mod)
+
+# Calculate Cook's distance for influential observations (leverage) in each model
+cooks_dep <- cooks.distance(model_dep_mod)
+
+# Plot for Depression model
+plot(cooks_dep, type = "h", main = "Cook's Distance for Depression Model",
+     ylab = "Cook's Distance", xlab = "Observation Index")
+abline(h = 4 / length(cooks_d_sn), col = "green", lty = 2)  # Add a reference line for influential points
+
+# Obtain robust standard errors for Depression model
+robust_dep <- lmtest::coeftest(model_dep_mod, vcov = vcovHC(model_dep_mod, type = "HC3"))
+
+# Create a summary table for the Depression model with robust standard errors
+tbl_dep_mod <- tbl_regression(model_dep_mod, exponentiate = TRUE, label = list(
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_cat ~ "Federal Poverty Level",
+      highgrade_tvis_cat ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex"
+    )) %>%
+  bold_p(t = 0.05)
+
+# Print table to review results # <2>
+tbl_dep_mod
 
 ```
 
-Run logistic regression models that incorporate interaction terms between the ACE counts and the Child Flourishing Index (CFI_dich) for three different mental health outcomes (Anxiety, Depression, Behavioral Issues). Then, create individual summary tables for each model (without exponentiating the coefficients), highlighting statistically significant p-values. Finally, merge the tables into a single output, displaying all models side by side with appropriate labels and formatting.
+### Behavioral Problems Model
 
-```{r Interaction Term Models, message=FALSE, warning=FALSE}
-#| column: screen
-#| out-width: 100%
+```{r behavioral-problems-flourishing-model, message=FALSE, warning=FALSE}
+# Logistic regression model with CFI_dich as a moderator for Behavioral Problems, using robust standard errors
+model_beh_mod <- svyglm(Behavioral_Problems ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + 
+                        sc_age_years, 
+                        design = design, family = quasibinomial())
 
-# Logistic regression model with CFI_dich as a moderator for Anxiety
-model_anx_mod <- glm(Anxiety ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
+# Perform the Breusch-Pagan test for heteroscedasticity
+lmtest::bptest(model_beh_mod)
 
-# Create a summary table for the Anixety model # <1>
-tbl_anx_mod <- tbl_regression(model_anx_mod, exponentiate = FALSE, label = list(
+# Calculate Cook's distance for influential observations (leverage) in each model
+cooks_beh <- cooks.distance(model_beh_mod)
+
+# Plot for Behavioral Problems model
+plot(cooks_beh, type = "h", main = "Cook's Distance for Behavioral Problems Model",
+     ylab = "Cook's Distance", xlab = "Observation Index")
+abline(h = 4 / length(cooks_d_ln), col = "blue", lty = 2)  # Add a reference line for influential points
+
+# Obtain robust standard errors for Behavioral Problems model
+robust_beh <- lmtest::coeftest(model_beh_mod, vcov = vcovHC(model_beh_mod, type = "HC3"))
+
+# Create a summary table for the Behavioral Problems model with robust standard errors
+tbl_beh_mod <- tbl_regression(model_beh_mod, exponentiate = TRUE, label = list( 
       ace_counts ~ "ACEs",
       CFI_dich ~ "Child Flourishing Index",
       fpl_cat ~ "Federal Poverty Level",
@@ -552,50 +643,15 @@ tbl_anx_mod <- tbl_regression(model_anx_mod, exponentiate = FALSE, label = list(
     )) |>
   bold_p(t = 0.05)
 
-# Logistic regression model with CFI_dich as a moderator for Depression
-model_dep_mod <- glm(Depression ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
-
-# Create a summary table for the Depression model # <2>
-tbl_dep_mod <- tbl_regression(model_dep_mod, exponentiate = FALSE, label = list(
-      ace_counts ~ "ACEs",
-      CFI_dich ~ "Child Flourishing Index",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
-      sc_age_years ~ "Child Age",
-      sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
-
-# Logistic regression model with CFI_dich as a moderator for Behavioral Problems
-model_beh_mod <- glm(Behavioral_Problems ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = neurodivergent_data, family = binomial)
-
-# Create a summary table for the Behavioral Problems model # <3>
-tbl_beh_mod <- tbl_regression(model_beh_mod, exponentiate = FALSE, label = list( 
-      ace_counts ~ "ACEs",
-      CFI_dich ~ "Child Flourishing Index",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
-      sc_age_years ~ "Child Age",
-      sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
-
-# Merge all tables into one
-mod_tbl_merged <- tbl_merge(
-  tbls = list(tbl_anx_mod, tbl_dep_mod, tbl_beh_mod),
-  tab_spanner = c("Anixety Model", "Depression Model", "Behavioral Problems Model")
-)
-
-# Display the combined table
-mod_tbl_merged
+# Print table to review results # <3>
+tbl_beh_mod
 
 ```
+:::
 
-1.  The interaction **anxiety** model **did not** yield significant findings, so we **do not** proceed with post-hoc analyses.
-2.  The interaction **depression** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
-3.  The interaction **behavioral problems** model **did** yield significant findinds, so we **do** proceed with post-hoc analyses.
+1.  The **anxiety** model **did not** yield significant interactions, so we **do not** proceed with stratified post-hoc analyses.
+2.  The **depression** model **did** yield significant interactions, so we **do** proceed with stratified post-hoc analyses.
+3.  The **behavioral problems** model **did** yield significant interactions, so we **do** proceed stratified with post-hoc analyses.
 
 Subset the data into flourishing and non-flourishing groups. Then, run logistic regression models for Depression and Behavioral Problems separately for each group, adjusting for covariates (ACE counts, race, sex, SES, education, and age). Create summary tables for each model, with p-values highlighted for significance. Finally, merge and display the tables for both flourishing and non-flourishing samples, stratified by Depression and Behavioral Problems.
 
@@ -705,35 +761,6 @@ plot_models(all.flourish.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TR
 
 ```
 
-```{r Visual Diagram Schematic, message=FALSE, warning=FALSE}
-# Create a diagram representing the analysis flow
-diagram <- grViz("
-  digraph flowchart {
-  
-    # Node definitions
-    node [shape = box, style = filled, fillcolor = lightgrey, fontname = Helvetica]
-    X [label = 'Adverse Childhood Experiences', width = 2]
-    Y [label = 'Anxiety, Depression, & Behavioral Problems', width = 2]
-    W [label = 'Child Flourishing', shape = box, style = filled, fillcolor = lightgrey, fontname = Helvetica]
-    Interaction [label = 'ACEs * Child Flourishing Interaction', shape = box, style = filled, fillcolor = lightgrey, fontname = Helvetica]
-
-    # Define edge connections
-    X -> Y [label = 'a: ##']
-    W -> Y [label = 'b: ##']
-    Interaction -> Y [label = 'c: ##']  # Interaction effect
-    X -> Interaction [label = '', style = invis]
-    W -> Interaction [label = '', style = invis]
-  
-    # Graph layout
-    rankdir = LR;  # Left to right layout
-  }
-")
-
-# Render the diagram
-diagram
-
-```
-
 # Session Information {#session-information}
 
 ------------------------------------------------------------------------
@@ -742,14 +769,12 @@ To enhance **reproducibility**, details about the **working environment** used f
 
 <button type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
 
-Session Information
-
-</button>
+Session Information </button>
 
 :::: {#collapseOne .accordion-collapse .collapse}
 <div>
 
-```{r}
+```{r session-info}
 sessionInfo()
 ```
 
