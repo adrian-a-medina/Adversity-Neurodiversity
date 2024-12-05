@@ -1,5 +1,5 @@
 ---
-title: "Intersections of Adversity & Neurodiversity: Adverse Childhood Experiences' Association to Mental Health & the Buffering Role of Flourishing"
+title: "From Risk to Resilience: Ecological Exploration of Psychopathology and Flourishing in Neurodivergent Children Facing Adversity"
 subtitle: "This study extends analyses conducted by <a href='https://www.healthaffairs.org/doi/10.1377/hlthaff.2018.05425'>Bethell et al. (2023)</a>, who explored the role of family resilience and connection in promoting flourishing among U.S. children facing adversity. Our study applies a similar framework but focuses on neurodivergent children, examining how adverse childhood experiences (ACEs) influence mental health outcomes and how flourishing behaviors—such as curiosity, emotional control, and task persistence—may buffer these effects. This study was conducted by the <a href='https://www.hsph.harvard.edu/profile/natalie-slopen/'>Slopen Laboratory</a> at the Harvard T.H. Chan School of Public Health."
 format:
   lumo-html: 
@@ -20,10 +20,10 @@ date: last-modified
 
 ------------------------------------------------------------------------
 
-This repository contains files relevant to a study investigating the relationship between adverse childhood experiences (ACEs) and mental health outcomes in children with neurodevelopmental disorders (NDDs), such as Autism Spectrum Disorder (ASD) and ADHD. The study specifically examines the moderating role of child flourishing behaviors—curiosity in learning, emotional control, and task persistence—on the effects of ACEs on mental health outcomes.
+This study investigates the relationship between adverse childhood experiences (ACEs) and mental health outcomes in children with neurodevelopmental disorders (NDDs), such as Autism Spectrum Disorder (ASD) and ADHD. The study specifically examines the moderating role of child flourishing behaviors—curiosity in learning, emotional control, and task persistence—on the effects of ACEs on mental health outcomes.
 
 [**Study Design**]{.underline}:\
-The study utilizes data from the National Survey of Children’s Health (NSCH), focusing on children aged 6-17 with reported neurodevelopmental issues (N = 44,776, M<sub>Age</sub> = 12.2). This cross-sectional analysis examines ACE exposure and its impact on three primary mental health outcomes: anxiety, depression, and behavioral issues. The moderating role of child flourishing behaviors is assessed using interaction terms in logistic regression models.
+The study utilizes data from the National Survey of Children’s Health (NSCH), focusing on children aged 6-17 with reported neurodevelopmental issues (N = 54,528, M<sub>Age</sub> = 12.1). This cross-sectional analysis assesses the exposure to ACEs and its impact on three key mental health outcomes: anxiety, depression, and behavioral problems. Interaction terms in logistic regression models are used to assess whether child flourishing behaviors buffer the effects of ACEs on these outcomes.
 
 [**Data Collection**]{.underline}:\
 Key variables collected include:
@@ -33,16 +33,18 @@ Key variables collected include:
 -   **Child Flourishing Metrics**: Based on parent-reported behaviors such as curiosity in learning, emotional control, and task persistence, which were used to develop a Child Flourishing Index (CFI).
 
 [**Analytic Approach**]{.underline}:\
-The primary analytic approach involved logistic regression models to assess the association between ACEs and mental health outcomes, with interaction terms to explore the moderating effect of child flourishing. Key covariates include age, sex, race/ethnicity, and socioeconomic status.
+Logistic regression models were employed to evaluate the association between ACEs and mental health outcomes, including interaction terms to investigate the moderating role of child flourishing. The models incorporated a comprehensive set of covariates, including child age, sex, race/ethnicity, socioeconomic status, caregiver mental health, neighborhood conditions, and healthcare access metrics.
 
 [**Goals**]{.underline}:\
 The study aims to:
 
--   **Examine the dose-response relationship** between the number of ACEs and risks of mental health challenges in neurodivergent children.
--   **Identify the protective role of child flourishing behaviors**, offering insights into resilience-promoting interventions for this vulnerable population.
+-   **Examine** the dose-response relationship between ACE exposure and mental health outcomes among neurodivergent children.
+-   **Assess** the protective role of child flourishing behaviors, with the goal of identifying resilience-promoting factors that can inform interventions for this vulnerable population.
 
 ::: callout-tip
-For detailed information on the dataset variables, refer to the [[**NSCH Data Dictionary**]{.underline}](https://www.census.gov/data-tools/demo/uccb/nschdict?s_keyword=).
+For detailed information on the NSCH-derived variables, refer to the [[**NSCH Data Dictionary**]{.underline}](https://www.census.gov/data-tools/demo/uccb/nschdict?s_keyword=).
+
+For a primer on Neurodiversity: [**What is Neurodiversity?**](https://www.health.harvard.edu/blog/what-is-neurodiversity-202111232645)
 :::
 
 # Data Frame Initialization {#data-frame-initialization}
@@ -55,19 +57,38 @@ Set up the R environment by configuring the CRAN repository, installing essentia
 # Set CRAN repository for consistent package installation
 options(repos = c(CRAN = "http://cran.rstudio.com/"))
 
-# Install and load the pacman package for efficient package management
+# Load or install the pacman package for efficient package management
 if (!require(pacman)) install.packages("pacman")
-library(pacman)
 
-# Use p_load function to install (if necessary) and load packages
-p_load(dplyr, tidyr, tidyverse, knitr, ggplot2, Hmisc, broom, stats, kableExtra, webshot2, sjPlot, margins, gtsummary, ggstats, broom.helpers, patchwork, sjlabelled, sjmisc, vtable, DiagrammeR, survey, sandwich, lmtest)
+# Use p_load to load or install the required packages
+p_load(
+  dplyr,           # Data manipulation
+  tidyr,           # Data reshaping (e.g., pivot_longer)
+  readr,           # Reading data (CSV files)
+  knitr,           # Creating tables for reports
+  kableExtra,      # Enhancing `knitr::kable()` tables
+  ggplot2,         # Data visualization
+  sjlabelled,      # Labelled data utility functions
+  sjmisc,          # Additional data manipulation functions
+  survey,          # Complex survey analysis
+  lmtest,          # Testing models (Breusch-Pagan test) and robust standard errors
+  sandwich,        # Calculating robust standard errors
+  gtsummary,       # Creating regression summary tables
+  ggeffects,       # Creating prediction plots
+  gt,              # Adjusting frequency/contingency tables
+  psych,           # Factor analysis
+  crosstable,      # Cross-Tabulations
+  ggpubr,          # Summary statistics + visualizations
+  tidyverse,       # Data visualization supplement
+  ggdist           # Distribution visualizations
+  )
 
 # Specify the 'base_path' where you can find your data files, ASSUMING they're in the same directory, & set it as WD
 base_path <- "~/GitHub/Adversity-Neurodiversity/data_files"
 setwd(base_path)
 
 # Load primary data file
-neurodivergent_data <- read_csv("neurodivergent_data.csv") # <1>
+neurodivergent_data <- read_csv("~/Downloads/nsch_2023e_topical_SAS/neurodivergent_data_2016to2023.csv") # <1>
 
 ```
 
@@ -76,7 +97,7 @@ neurodivergent_data <- read_csv("neurodivergent_data.csv") # <1>
 ::: callout-important
 ## Data Extraction & Filtering (Archived Code)
 
-The file being used for these analyses is a subset of a "master" file, `Data2_2016to2022.csv`, containing the compiled contents of the data releases from the National Survey on Child Health's 2016-2022 cycles. The master file is nearly 500 MB (0.5 GB) in size, making it cumbersome to process in real-time. For efficiency and ease of analysis, I am using a smaller subset that contains only the relevant data. This subset was generated using the data extraction and filtering process detailed in the archived code below, in an effort to maintain transparency and ensure reproducibility of the workflow.
+The file being used for these analyses is a subset of a "master" file, `Data2_2016to2022.csv`, containing the compiled contents of the data releases from the National Survey on Child Health's 2016-2022 cycles. The master file is \>500 MB (0.5 GB) in size, making it cumbersome to process in real-time. For efficiency and ease of analysis, I am using a smaller subset that contains only the relevant data. This subset was generated using the data extraction and filtering process detailed in the archived code below, in an effort to maintain transparency and ensure reproducibility of the workflow.
 
 Additionally, data from the NSCH 2023 was also later merged into the subset file being used for this analyses. The code for the extraction/wrangling process is shown below.
 
@@ -87,16 +108,22 @@ Data2_2016to2022 <- read.csv(data_path)
 
 # Select specific variables, create 'neurodivergent' variable, & filter data based on age and neurodivergent status
 neurodivergent_data <- Data2_2016to2022 %>%
-  select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis, k2q35a, k2q35c, k2q38a,
-         k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, k2q37a, k2q37c, downsyn, downsyn_desc, 
-         k2q31a, k2q31c, k2q61a, cerpals_desc, k2q33a, k2q33b, k2q33c, k2q32a, k2q32b, k2q32c, k2q34a, k2q34b, k2q34c, 
-         ace1, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, ace11, ace12, k6q71_r, k7q85_r, k7q84_r, talkabout,
-         wktosolve, strengths, hopeful, k8q21, k8q30, fwc) %>%
+  select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis,
+         k2q35a, k2q35c, k2q38a, k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, 
+         k2q37a, k2q37c, downsyn, downsyn_desc, k2q31a, k2q31c, k2q61a, cerpals_desc, 
+         k2q33a, k2q33b, k2q33c, k2q32a, k2q32b, k2q32c, k2q34a, k2q34b, k2q34c, 
+         ace1, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, ace11, ace12, k6q71_r, 
+         k7q85_r, k7q84_r, talkabout, wktosolve, strengths, hopeful, k8q21, k8q30, fwc, 
+         k2q42a, k2q42c, a1_menthealth, a2_menthealth, k2q01, k4q27, k4q28x01, k4q28x04, 
+         appointment, available, issuecost, notelig, notopen, transportcc, family, family_r,
+         k10q11, k10q12, k10q13, k10q14, k10q20, k10q22, k10q23, k10q40_r, k10q41_r,
+         k10q30, k10q31, k9q96, sc_cshcn, k3q22, k3q20, instype, treatneed, k4q22_r,
+         menbevcov) %>%
   # Creating 'neurodivergent' variable as NSCH does not explicitly inquire about neurodivergent status.
   # Using a list of diagnoses provided by NSCH to define neurodivergent individuals.
   mutate(neurodivergent = if_else(k2q35a == 1 | k2q38a == 1 | k2q36a == 1 | k2q60a == 1 | 
                                   k2q37a == 1 | k2q30a == 1 | downsyn == 1 | 
-                                  k2q31a == 1 | k2q61a == 1, 1, 0)) %>%
+                                  k2q31a == 1 | k2q61a == 1 | k2q42a == 1, 1, 0)) %>%
   # Filter data to include only individuals aged 6 or above and identified as neurodivergent
   filter(sc_age_years >= 6, neurodivergent == 1)
 
@@ -107,7 +134,7 @@ write.csv(neurodivergent_data, "neurodivergent_data_2016to2022.csv")
 
 ```{r archived-data-extraction-2023, eval=FALSE, message=FALSE, warning=FALSE}
 # Define the path to the dataset
-data_path <- "~/Downloads/nsch_2023e_topical.csv"  
+data_path <- "~/Downloads/nsch_2023e_topical_SAS/nsch_2023e_topical.csv"  
 nsch_data <- read.csv(data_path)
 
 # Create a new variable 'fpl_mean' representing the average of specific columns
@@ -115,25 +142,36 @@ nsch_data <- nsch_data %>%
   mutate(fpl_mean = rowMeans(select(., fpl_i1, fpl_i2, fpl_i3, fpl_i4, fpl_i5, fpl_i6), na.rm = TRUE))
 
 # Select specific variables, create 'neurodivergent' variable, & filter data based on age and neurodivergent status (manually added in blank columns fpl and downsyn_desc)
+# `menbevcov` was not collected for 2023
 neurodivergent_data_23 <- nsch_data %>%
-  select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis, k2q35a, k2q35c, k2q38a,
-         k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, k2q37a, k2q37c, downsyn, downsyn_desc, 
-         k2q31a, k2q31c, k2q61a, cerpals_desc, k2q33a, k2q33b, k2q33c, k2q32a, k2q32b, k2q32c, k2q34a, k2q34b, k2q34c, 
-         ace1, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, ace11, ace12, k6q71_r, k7q85_r, k7q84_r, talkabout,
-         wktosolve, strengths, hopeful, k8q21, k8q30, fwc) %>%
+  select(year, fpl, fpl_mean, sc_age_years, sc_hispanic_r, sc_race_r, sc_sex, higrade_tvis, 
+         k2q35a, k2q35c, k2q38a, k2q38c, k2q30a, k2q30c, k2q36a, k2q36c, k2q60a, k2q60c, 
+         k2q37a, k2q37c, downsyn, downsyn_desc, k2q31a, k2q31c, k2q61a, cerpals_desc, 
+         k2q33a, k2q33b, k2q33c, k2q32a, k2q32b, k2q32c, k2q34a, k2q34b, k2q34c, 
+         ace1, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, ace11, ace12, k6q71_r, 
+         k7q85_r, k7q84_r, talkabout, wktosolve, strengths, hopeful, k8q21, k8q30, fwc, 
+         k2q42a, k2q42c, a1_menthealth, a2_menthealth, k2q01, k4q27, k4q28x01, k4q28x04, 
+         appointment, available, issuecost, notelig, notopen, transportcc, family_r,
+         k10q11, k10q12, k10q13, k10q14, k10q20, k10q22, k10q23, k10q40_r, k10q41_r,
+         k10q30, k10q31, k9q96, sc_cshcn, k3q22, k3q20, instype, treatneed, k4q22_r) %>%
   # Creating 'neurodivergent' variable as NSCH does not explicitly inquire about neurodivergent status.
   # Using a list of diagnoses provided by NSCH to define neurodivergent individuals.
   mutate(neurodivergent = if_else(k2q35a == 1 | k2q38a == 1 | k2q36a == 1 | k2q60a == 1 | 
                                   k2q37a == 1 | k2q30a == 1 | downsyn == 1 | 
-                                  k2q31a == 1 | k2q61a == 1, 1, 0)) %>%
+                                  k2q31a == 1 | k2q61a == 1 | k2q42a == 1, 1, 0)) %>%
   # Filter data to include only individuals aged 6 or above and identified as neurodivergent
   filter(sc_age_years >= 6, neurodivergent == 1)
 
 # Resulting filtered data to be used for further analysis
 write.csv(neurodivergent_data_23, "neurodivergent_data_2023.csv")
 
+## Manually removed index column in both 2016-2022 and 2023 files 
+## Manually add empty `family` & `menbevcov` columns to 2023 file
+# Read in update 2023 data file
+neurodivergent_data_23 <- read.csv("~/Downloads/nsch_2023e_topical_SAS/neurodivergent_data_2023.csv")
+
 # Read in prior years of neurodivergent data
-neurodivergent_data_16to22 <- read.csv("neurodivergent_data_2016to2022.csv")
+neurodivergent_data_16to22 <- read.csv("~/Downloads/nsch_2023e_topical_SAS/neurodivergent_data_2016to2022.csv")
 
 # Merge two data frames with identical columns
 neurodivergent_data_16to23 <- rbind(neurodivergent_data_16to22, neurodivergent_data_23)
@@ -148,112 +186,22 @@ write.csv(neurodivergent_data_16to23, "neurodivergent_data_2016to2023.csv", row.
 
 ------------------------------------------------------------------------
 
-Recode analytic variables and covariates, including ACE counts, Childhood Flourishing Index (CFI), binary outcomes (anxiety, depression, behavioral issues), education, income, sex, and race/ethnicity variables into categorical factors for analysis.
+## Child Demographic Variables
 
-```{r recoding-analytic-variables, message=FALSE, warning=FALSE}
-# Recode 'ace1' to dichotomous variable based on analytic specifications # <1>
-neurodivergent_data$ace1_recode <- ifelse(neurodivergent_data$ace1 %in% c(2, 3, 4), 1, 
-                                          ifelse(neurodivergent_data$ace1 == 1, 0, NA))
+Recode survey year into a factor, recode child sex as a categorical variable, recode race and ethnicity into descriptive categories, and create a combined race-ethnicity variable.
 
-# Recode ACE counts and calculate Childhood Flourishing Index (CFI) # <2>
+```{r child-demographic-variables, message=FALSE, warning=FALSE}
+# Recode survey year into a factor variable
 neurodivergent_data <- neurodivergent_data %>%
-  mutate(
-    # Total ACE count for each child excluding missing values
-    ace_total = rowSums(select(., ace1_recode, ace3:ace12) == 1, na.rm = TRUE),
-    
-    # Categorize total ACEs for further analysis
-    ace_counts = cut(ace_total, breaks = c(-1, 0, 1, 3, Inf), labels = c('0 ACEs', '1 ACE', '2-3 ACEs', '4+ ACEs'), right = TRUE),
-    ace_counts = factor(ace_counts, levels = c("0 ACEs", "1 ACE", "2-3 ACEs", "4+ ACEs")), # Recreate 'ace_counts' factor
+  mutate(survey_year = factor(year))
 
-    # Calculate the Childhood Flourishing Index (CFI)
-    CFI = rowSums(select(., k6q71_r, k7q85_r, k7q84_r) == 1, na.rm = TRUE),
-    
-    # Recode CFI into dichotomous variable
-    CFI_dich = case_when(
-      CFI == 3 ~ "Flourishing",
-      CFI %in% 0:2 ~ "Not Flourishing",
-      TRUE ~ NA_character_
-    ),
-    CFI_dich = factor(CFI_dich, levels = c("Not Flourishing", "Flourishing")) # Recreate 'CFI_dich' factor
-  )
-
-# Calculate and recode Family Resilience and Connection Index (FRCI)
-neurodivergent_data <- neurodivergent_data %>%
-  mutate(
-    # Recode the four FRI items: assign 1 point for "All of the time" (response code 1), handling missing values
-    talkabout_score = ifelse(is.na(talkabout), NA, ifelse(talkabout == 1, 1, 0)),
-    wktosolve_score = ifelse(is.na(wktosolve), NA, ifelse(wktosolve == 1, 1, 0)),
-    strengths_score = ifelse(is.na(strengths), NA, ifelse(strengths == 1, 1, 0)),
-    hopeful_score = ifelse(is.na(hopeful), NA, ifelse(hopeful == 1, 1, 0)),
-    
-    # Recode the two additional items: assign 1 point for "Very well" (response code 1), handling missing values
-    k8q21_score = ifelse(is.na(k8q21), NA, ifelse(k8q21 == 1, 1, 0)),
-    k8q30_score = ifelse(is.na(k8q30), NA, ifelse(k8q30 == 1, 1, 0)),
-    
-    # Calculate the total FRCI score by summing all six items, ignoring missing values
-    FRCI = rowSums(across(c(talkabout_score, wktosolve_score, strengths_score, hopeful_score, k8q21_score, k8q30_score)), na.rm = TRUE),
-    
-    # Create a categorical version of FRCI
-    FRCI_cat = factor(
-      case_when(
-        FRCI <= 1 ~ "0-1",
-        FRCI <= 3 ~ "2-3",
-        FRCI <= 6 ~ "4-6"
-      ),
-      levels = c("0-1", "2-3", "4-6")
-    )
-  )
-
-# Recode binary outcomes for anxiety, depression, and behavioral issues into factors
-neurodivergent_data <- neurodivergent_data %>%
-  mutate(
-    # Recode Anxiety (k2q33b)
-    Anxiety = factor(k2q33b, levels = c(2, 1), labels = c("No", "Yes")),
-    
-    # Recode Depression (k2q32b)
-    Depression = factor(k2q32b, levels = c(2, 1), labels = c("No", "Yes")),
-    
-    # Recode Behavioral Problems (k2q34b)
-    Behavioral_Problems = factor(k2q34b, levels = c(2, 1), labels = c("No", "Yes"))
-  )
-
-# Recode education and income categories
-neurodivergent_data <- neurodivergent_data %>%
-  mutate(
-    # Recode education into categorical factors
-    highgrade_tvis_cat = case_when(
-      higrade_tvis == 1 ~ "Less Than High School",
-      higrade_tvis == 2 ~ "High School/Vocational",
-      higrade_tvis == 3 ~ "Some College/Associate Degree",
-      higrade_tvis == 4 ~ "College Degree/Higher",
-      TRUE ~ NA_character_
-    ),
-    highgrade_tvis_cat = factor(highgrade_tvis_cat, levels = c("Less Than High School", "High School/Vocational", "Some College/Associate Degree", "College Degree/Higher")),
-
-    # Recode federal poverty level categories into factors
-    fpl_cat = case_when(
-      fpl %in% c(50:99) | fpl_mean < 100 ~ "<100%",
-      fpl %in% c(100:199) | fpl_mean < 200 ~ "100%-199%",
-      fpl %in% c(200:299) | fpl_mean < 300 ~ "200%-299%",
-      fpl %in% c(300:399) | fpl_mean < 400 ~ "300%-399%",
-      fpl %in% c(400:999) | fpl_mean < 999 ~ "≥400%",
-      TRUE ~ NA_character_
-    ),
-    fpl_cat = factor(fpl_cat, levels = c("<100%", "100%-199%", "200%-299%", "300%-399%", "≥400%"))
-  )
-
-# Recode sex and race categories
+# Recode sex and race/ethnicity categories
 neurodivergent_data <- neurodivergent_data %>%
   mutate(
     # Recode sex into categorical factors
-    sc_sex_cat = case_when(
-      sc_sex == 1 ~ "Male",
-      sc_sex == 2 ~ "Female",
-      TRUE ~ NA_character_
-    ),
-    sc_sex_cat = factor(sc_sex_cat, levels = c("Male", "Female")),
-
-    # Recode race and ethnicity
+    sc_sex_cat = factor(sc_sex, levels = c(1, 2), labels = c("Male", "Female")),
+    
+    # Recode race categories into descriptive labels
     race = case_when(
       sc_race_r == 1 ~ "White",
       sc_race_r == 2 ~ "Black",
@@ -262,106 +210,518 @@ neurodivergent_data <- neurodivergent_data %>%
       sc_race_r %in% 6:7 ~ "Other or Mixed Race",
       TRUE ~ NA_character_
     ),
-
+    
+    # Recode ethnicity
     ethnicity = case_when(
       sc_hispanic_r == 1 ~ "Hispanic/Latino",
       sc_hispanic_r == 2 ~ "Non-Hispanic/Latino",
       TRUE ~ NA_character_
     ),
-
-    # Recreate 'sc_race_cat' from race and ethnicity combinations
+    
+    # Create combined race and ethnicity category
     sc_race_cat = case_when(
-      race %in% c("White") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic White",
-      race %in% c("Black") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Black or African American",
-      race %in% c("American Indian or Alaska Native") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic American Indian or Alaska Native",
-      race %in% c("Asian, Native Hawaiian, or Pacific Islander") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander",
-      race %in% c("Other or Mixed Race") & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Other or Mixed Race",
+      race == "White" & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic White",
+      race == "Black" & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Black or African American",
+      race == "American Indian or Alaska Native" & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic American Indian or Alaska Native",
+      race == "Asian, Native Hawaiian, or Pacific Islander" & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander",
+      race == "Other or Mixed Race" & ethnicity == "Non-Hispanic/Latino" ~ "Non-Hispanic Other or Mixed Race",
       ethnicity == "Hispanic/Latino" ~ "Hispanic/Latino of Any Race",
       TRUE ~ NA_character_
     ),
-    sc_race_cat = factor(sc_race_cat, levels = c("Non-Hispanic White", "Non-Hispanic Black or African American", 
-                                                "Non-Hispanic American Indian or Alaska Native", "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander", "Non-Hispanic Other or Mixed Race", "Hispanic/Latino of Any Race"))
+    sc_race_cat = factor(sc_race_cat, levels = c(
+      "Non-Hispanic White", 
+      "Non-Hispanic Black or African American", 
+      "Non-Hispanic American Indian or Alaska Native", 
+      "Non-Hispanic Asian, Native Hawaiian, or Pacific Islander", 
+      "Non-Hispanic Other or Mixed Race", 
+      "Hispanic/Latino of Any Race"
+    ))
+  )
+
+```
+
+## Healthcare-Related Variables
+
+Create healthcare-related indices including Healthcare Access, Barriers to Access, Insurance Type, and Insurance Adequacy. Recode variables for consistent formatting, compute indices, and categorize healthcare access levels based on defined thresholds.
+
+```{r healthcare-related-variables, message=FALSE, warning=FALSE}
+# Create a Healthcare Access Index and categorize it # <1>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    healthcare_access_index = case_when(
+      k4q27 == 2 & k4q22_r == 1 ~ 2,  # High access
+      k4q27 == 2 & k4q22_r == 3 ~ 1,  # Medium access
+      k4q27 == 1 | k4q22_r == 2 ~ 0,  # Low access
+      TRUE ~ NA_real_ # Assign NA for missing or undefined values
+    ),
+    HAI_category = factor(healthcare_access_index, 
+                          levels = c(2, 1, 0), 
+                          labels = c("High Access", "Medium Access", "Low Access"))
+  )
+
+# Recode 'treatneed' to standardize across survey years # <2>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    treatneed_score = case_when(
+      survey_year %in% 2018:2023 & treatneed == 1 ~ 0,  # Not difficult (2018-2023)
+      survey_year %in% 2018:2023 & treatneed == 2 ~ 1,  # Somewhat difficult (2018-2023)
+      survey_year %in% 2018:2023 & treatneed == 3 ~ 2,  # Very difficult (2018-2023)
+      survey_year %in% 2018:2023 & treatneed == 4 ~ 3,  # Not possible (2018-2023)
+      survey_year %in% 2016:2017 & treatneed == 1 ~ 0,  # Not a problem (2016-2017)
+      survey_year %in% 2016:2017 & treatneed == 2 ~ 1,  # Small problem (2016-2017)
+      survey_year %in% 2016:2017 & treatneed == 3 ~ 2,  # Big problem (2016-2017)
+      TRUE ~ NA_real_  # Assign NA for missing or undefined values
+    )
+  )
+
+# Create the Barriers to Access Index # <2>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    barriers_score = rowSums(select(., appointment, available, issuecost, notelig, notopen, transportcc, treatneed_score) == 1, na.rm = TRUE),
+    barriers_cat = cut(barriers_score, 
+                       breaks = c(-1, 0, 2, 4, 7), 
+                       labels = c("No Barriers", "Few Barriers", "Moderate Barriers", 
+                                  "Many Barriers"))
+  )
+
+# Include insurance type as a categorical variable
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    insurance_type = case_when(
+      instype == 1 ~ "Public Only",
+      instype == 2 ~ "Private Only",
+      instype == 3 ~ "Private + Public",
+      instype == 5 ~ "Uninsured",
+      instype == 4 ~ NA_character_  # Excluded 'insurance type unspecified', n = 85
+    ),
+    insurance_type = factor(insurance_type, 
+                            levels = c("Private Only", "Private + Public", 
+                                       "Public Only", "Uninsured"))
+    )
+
+# Create an Insurance Adequacy Index # <3>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Assign scores to the categorical responses
+    k3q20_score = recode(k3q20, `1` = 4, `2` = 3, `3` = 2, `4` = 1), 
+    k3q22_score = recode(k3q22, `1` = 4, `2` = 3, `3` = 2, `4` = 1),
+    menbevcov_score = recode(menbevcov, `1` = 4, `2` = 3, `3` = 2, `4` = 1, `5` = NA_real_), 
+    # Excluded `menbevcov` = 5 'child does not need/use M/BH services', n = 15,310
+    
+    # Sum scores to create an Insurance Adequacy Index
+    insurance_adequacy_index = rowSums(across(c(k3q20_score, k3q22_score, menbevcov_score)), na.rm = TRUE),
+
+    # Categorize the Insurance Adequacy Index
+    IAI_category = case_when(
+      insurance_adequacy_index >= 10 & insurance_adequacy_index <= 12 ~ "High Adequacy",
+      insurance_adequacy_index >= 7 & insurance_adequacy_index < 10 ~ "Moderate Adequacy",
+      insurance_adequacy_index >= 3 & insurance_adequacy_index < 7 ~ "Low Adequacy",
+      TRUE ~ NA_character_  # Assign NA for missing or undefined values
+    ),
+    IAI_category = factor(IAI_category, levels = c("High Adequacy", "Moderate Adequacy", "Low Adequacy"))
+  )
+
+```
+
+1.  `k4q27` = Needed Health Care Not Received; `k4q22_r` = Mental Health Professional Treatment
+2.  `treatneed` = Mental Health Professional Treatment - Access Difficulty; `appointment` = Needed Health Care Not Received Due to - Getting Appointment; `available` = Needed Health Care Not Received Due to - Not Available; `issuecost` = Needed Health Care Not Received Due to - Cost; `notelig` = Needed Health Care Not Received Due to - Not Eligible; `notopen` = Needed Health Care Not Received Due to - Office Not Open; `transportcc` = Needed Health Care Not Received Due to - Getting Transportation
+3.  `k3q20` = Benefits Cover Services; `k3q22` = Allow to See Provider; `menbevcov` = Cover Mental Behavioral Needs
+
+## Family & Caregiver Context Variables
+
+Recode caregiver education, family income, and caregiver composition variables to categorical values. Create a composite score for caregiver mental health, then categorize it into meaningful health levels.
+
+```{r family-caregiver-variables, message=FALSE, warning=FALSE}
+# Recode caregiver education and family income categories
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Recode caregiver education into categories
+    caregiver_education = case_when(
+      higrade_tvis == 1 ~ "Less Than High School",
+      higrade_tvis == 2 ~ "High School/Vocational",
+      higrade_tvis == 3 ~ "Some College/Associate Degree",
+      higrade_tvis == 4 ~ "College Degree/Higher",
+      TRUE ~ NA_character_ # Assign NA for missing or undefined values
+    ),
+    caregiver_education = factor(caregiver_education, levels = c("Less Than High School", "High School/Vocational", "Some College/Associate Degree", "College Degree/Higher")),
+
+    # Recode family income into federal poverty level categories
+    fpl_category = case_when(
+      fpl %in% c(50:99) | fpl_mean < 100 ~ "<100%",
+      fpl %in% c(100:199) | fpl_mean < 200 ~ "100%-199%",
+      fpl %in% c(200:299) | fpl_mean < 300 ~ "200%-299%",
+      fpl %in% c(300:399) | fpl_mean < 400 ~ "300%-399%",
+      fpl %in% c(400:999) | fpl_mean < 999 ~ "≥400%",
+      TRUE ~ NA_character_ # Assign NA for missing or undefined values
+    ),
+    fpl_category = factor(fpl_category, levels = c("<100%", "100%-199%", "200%-299%", "300%-399%", "≥400%"))
+  )
+
+# Simplify caregiver composition based on family structure
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    caregiver_composition = case_when(
+      family %in% c(1, 2, 3, 4) | family_r %in% c(1, 2, 3, 4) ~ "Dual-caregiver household",
+      family %in% c(5, 6, 7, 8, 9) | family_r %in% c(5, 6, 7, 8) ~ "Single-caregiver household",
+      TRUE ~ NA_character_ # Assign NA for missing or undefined values
+    ),
+    caregiver_composition = factor(caregiver_composition, levels = c("Dual-caregiver household", "Single-caregiver household"))
+  )
+
+# Create a composite variable for caregiver mental health # <1>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    caregiver_mental_health_score = rowMeans(select(., a1_menthealth, a2_menthealth), na.rm = TRUE),
+    caregiver_mental_health = cut(
+      caregiver_mental_health_score,
+      breaks = c(1, 1.5, 2.5, 3.5, 4.5, 5),
+      labels = c("Excellent", "Very Good", "Good", "Fair", "Poor"),
+      include.lowest = TRUE
+    )
+  )
+
+```
+
+1.  Scores of caregiver mental health are averaged to account for single respondents (i.e., single-caregiver households).
+
+## Neighborhood Context Variables
+
+Recode neighborhood binary items to 0/1 format and standardize ordinal neighborhood variables by subtracting their mean and dividing by the standard deviation.
+
+```{r neighborhood-context-variables, message=FALSE, warning=FALSE}
+# Recode neighborhood condition-related binary items to 0/1 # <1>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    across(c(k10q11, k10q12, k10q13, k10q14, k10q20, k10q22, k10q23, k9q96), ~ ifelse(. == 1, 1, 0))
+  )
+
+# Standardize neighborhood condition-related ordinal variables # <2>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    across(c(k10q40_r, k10q41_r, k10q30, k10q31), ~ scale(., center = TRUE, scale = TRUE))
+  )
+
+```
+
+1.  `k10q11` = Neighborhood - Sidewalks or Walking Paths; `k10q12` = Neighborhood - Park or Playground; `k10q13` = Neighborhood - Recreation Center; `k10q14` = Neighborhood - Library or Bookmobile; `k10q20` = Neighborhood - Litter or Garbage; `k10q22` = Neighborhood - Poorly Kept or Rundown Housing; `k10q23` = Neighborhood - Vandalism; `k9q96` = Other Adult Child Can Rely On For Advice
+2.  `k10q40_r` = Child is Safe In Neighborhood; `k10q41_r` = Child Is Safe at School; `k10q30` = People In Neighborhood Help Each Other Out; `k10q31` = Watch Out for Other's Children
+
+### Factor Analysis - Neighborhood Context Scores
+
+Conduct factor analysis on neighborhood context variables to derive factor scores for physical resources, environmental threats, and collective efficacy, and add these scores to the primary data frame. Remove intermediate data frames from the global environment.
+
+The factor structure was adapted from factor conceptualization detailed in [Fan & Chen (2012)](https://www.sciencedirect.com/science/article/pii/S0277953612001736), "Family functioning as a mediator between neighborhood conditions and children's health: Evidence from a national survey in the United States." Principal Axis Factoring (PAF) was used as the factoring method, and factor scores were calculated using the regression method, thus consistent with the approach in the referenced study.
+
+```{r neighborhood-factor-analysis, message=FALSE, warning=FALSE}
+# Select the items for each neighborhood factor
+physical_resources_items <- neurodivergent_data %>%
+  select(k10q11, k10q12, k10q13, k10q14)
+
+environmental_threats_items <- neurodivergent_data %>%
+  select(k10q20, k10q22, k10q23, k10q40_r, k10q41_r)
+
+collective_efficacy_items <- neurodivergent_data %>%
+  select(k10q40_r, k10q41_r, k10q30, k10q31, k9q96)
+
+# Conduct factor analysis for each factor using Principal Axis Factoring (PAF)
+fa_physical_resources <- fa(physical_resources_items, nfactors = 1, fm = "pa")
+fa_environmental_threats <- fa(environmental_threats_items, nfactors = 1, fm = "pa")
+fa_collective_efficacy <- fa(collective_efficacy_items, nfactors = 1, fm = "pa")
+
+# Calculate factor scores for physical resources using regression method
+physical_resources_scores <- factor.scores(physical_resources_items, fa_physical_resources, method = "regression")$scores[, 1]
+
+# Calculate factor scores for environmental threats using regression method
+environmental_threats_scores <- factor.scores(environmental_threats_items, fa_environmental_threats, method = "regression")$scores[, 1]
+
+# Calculate factor scores for collective efficacy using regression method
+collective_efficacy_scores <- factor.scores(collective_efficacy_items, fa_collective_efficacy, method = "regression")$scores[, 1]
+
+# Add factor scores back to the dataset
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    physical_resources = physical_resources_scores,
+    environmental_threats = environmental_threats_scores,
+    collective_efficacy = collective_efficacy_scores
+  )
+
+# Remove intermediate data frames from the global environment
+rm(physical_resources_items, environmental_threats_items, collective_efficacy_items, 
+   fa_physical_resources, fa_environmental_threats, fa_collective_efficacy, 
+   physical_resources_scores, environmental_threats_scores, collective_efficacy_scores)
+
+```
+
+## Child Health & Development Variables
+
+Standardize Down Syndrome & Tourette Syndrome severity variables based on survey year, calculate total severity scores across diagnoses, categorize average severity scores into severity levels, recode child general health, and convert the special healthcare needs indicator into binary format with labeled categories.
+
+```{r child-health-variables, message=FALSE, warning=FALSE}
+# Standardize Down Syndrome and Tourette Syndrome severity variables based on survey year
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    downsyn_desc_recode = case_when(
+      survey_year %in% c(2016, 2017) & downsyn_desc == 1 ~ 1,
+      survey_year %in% c(2016, 2017) & downsyn_desc == 4 ~ 3,
+      survey_year >= 2019 ~ downsyn_desc,
+      TRUE ~ NA_real_  # Handle missing or undefined years as NA
+    ),
+    k2q38c_recode = case_when(
+      k2q38c == 1 ~ 1,
+      k2q38c == 4 ~ 3
+    )
+  )
+
+# List of severity variables, including recoded Down & Tourette Syndromes' description # <1>
+severity_variables <- c("k2q31c", "k2q35c", "k2q38c_recode", "k2q30c", "k2q36c", "k2q60c", 
+                        "k2q37c", "downsyn_desc_recode", "cerpals_desc", "k2q42c")
+
+# Calculate total and average severity scores
+neurodivergent_data <- neurodivergent_data %>%
+  rowwise() %>%
+  mutate(
+    total_severity_score = ifelse(all(is.na(c_across(all_of(severity_variables)))), NA_real_, 
+                                  sum(c_across(all_of(severity_variables)), na.rm = TRUE))
+  ) %>%
+  ungroup()
+
+# Recode child general health variable
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(child_gen_health = factor(
+    case_when(
+      k2q01 == 1 ~ "Excellent",
+      k2q01 == 2 ~ "Very Good",
+      k2q01 == 3 ~ "Good",
+      k2q01 == 4 ~ "Fair",
+      k2q01 == 5 ~ "Poor"
+    ),
+    levels = c("Excellent", "Very Good", "Good", "Fair", "Poor"))
+    )
+
+# Convert Special Healthcare Needs (SHCN) indicator to binary and label accordingly
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    sc_cshcn = ifelse(sc_cshcn == 1, 1, 0),
+    special_healthcare_needs = factor(
+      case_when(
+        sc_cshcn == 0 ~ "Non-SHCN",
+        sc_cshcn == 1 ~ "SHCN"
+      ),
+      levels = c("Non-SHCN", "SHCN")
+    )
+  )
+
+```
+
+1.  `k2q31c` = ADD/ADHD Severity Description; `k2q35c` = Autism ASD Severity Description; `k2q38c_recode` = Tourette Syndrome Severity Description; `k2q30c` = Learning Disability Severity Description; `k2q36c` = Developmental Delay Severity Description; `k2q60c` = Intellectual Disability Severity Description; `k2q37c` = Speech Disorder Severity Description; `downsyn_desc_recode` = Down Syndrome Severity Description; `cerpals_desc` = Cerebral Palsy Severity Description; `k2q42c` = Epilepsy Severity Description
+
+## Psychosocial Risk & Protective Factors
+
+Recode ACEs, psychopathology, and psychosocial factors. Compute the Childhood Flourishing Index and the Family Resilience and Connection Index, based on [Bethell et al. (2019)](https://www.healthaffairs.org/doi/10.1377/hlthaff.2018.05425), "Family Resilience And Connection Promote Flourishing Among US Children, Even Amid Adversity." Create categorical versions of these indices for further analysis.
+
+-   The Child Flourishing Index (CFI) in was calculated using three items from the National Survey of Children's Health (NSCH). Each item asked parents how well each of the following statements described their child: (1) "shows interest and curiosity in learning new things," (2) "works to finish tasks he or she starts," and (3) "stays calm and in control when faced with a challenge." Each item was assigned one point for a response of "definitely true." Children who scored 3 were classified as flourishing.
+
+-   The Family Resilience and Connection Index (FRCI) was created using six items from the NSCH. The index included four items on family resilience, which asked how often families: (1) "talk together about what to do," (2) "work together to solve our problems," (3) "know we have strengths to draw on," and (4) "stay hopeful even in difficult times." Parents could earn one point for each of these items if they responded "all of the time." Two additional items assessed family connection: (1) the ability of the parent to "share ideas or talk about things that really matter" with their child and (2) how well parents were "handling the day-to-day demands of raising children." One point was assigned for each response of "very well." The FRCI score ranged from 0 to 6.
+
+```{r risk-protective-variables, message=FALSE, warning=FALSE}
+# Recode Adverse Childhood Experiences (ACE) variables & psychopathology outcomes
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Recode 'ace1' to a dichotomous variable # <1>
+    ace1_recode = ifelse(ace1 %in% c(2, 3, 4), 1, ifelse(ace1 == 1, 0, NA))
+  ) %>%
+  mutate(
+    # Total ACE count excluding missing values # <2>
+    ace_total = rowSums(select(., ace1_recode, ace3:ace12) == 1, na.rm = TRUE),
+    
+    # Categorize total ACEs for analysis
+    ace_counts = cut(ace_total, breaks = c(-1, 0, 1, 3, Inf), labels = c('0 ACEs', '1 ACE', '2-3 ACEs', '4+ ACEs'), right = TRUE),
+    ace_counts = factor(ace_counts, levels = c("0 ACEs", "1 ACE", "2-3 ACEs", "4+ ACEs")),
+    
+    # Recode psychopathology outcomes # <3>
+    Anxiety = factor(k2q33b, levels = c(2, 1), labels = c("No", "Yes")),
+    Depression = factor(k2q32b, levels = c(2, 1), labels = c("No", "Yes")),
+    Behavioral_Problems = factor(k2q34b, levels = c(2, 1), labels = c("No", "Yes"))
+  )
+
+# Calculate and recode Childhood Flourishing Index (CFI) # <4>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Calculate the Childhood Flourishing Index (CFI)
+    CFI = rowSums(select(., k6q71_r, k7q85_r, k7q84_r) == 1, na.rm = TRUE),
+    
+    # Recode CFI into a dichotomous variable
+    CFI_dich = case_when(
+      CFI == 3 ~ "Flourishing",
+      CFI %in% 0:2 ~ "Not Flourishing",
+      TRUE ~ NA_character_
+    ),
+    CFI_dich = factor(CFI_dich, levels = c("Not Flourishing", "Flourishing"))
+  )
+
+# Calculate and recode Family Resilience and Connection Index (FRCI) # <5>
+neurodivergent_data <- neurodivergent_data %>%
+  mutate(
+    # Recode FRCI items: 1 point for "All of the time" (response = 1), handle missing values
+    talkabout_score = ifelse(!is.na(talkabout) & talkabout == 1, 1, 0),
+    wktosolve_score = ifelse(!is.na(wktosolve) & wktosolve == 1, 1, 0),
+    strengths_score = ifelse(!is.na(strengths) & strengths == 1, 1, 0),
+    hopeful_score = ifelse(!is.na(hopeful) & hopeful == 1, 1, 0),
+    
+    # Recode additional FRCI items: 1 point for "Very well" (response = 1), handle missing values
+    k8q21_score = ifelse(!is.na(k8q21) & k8q21 == 1, 1, 0),
+    k8q30_score = ifelse(!is.na(k8q30) & k8q30 == 1, 1, 0),
+    
+    # Calculate total FRCI score by summing all items, ignoring missing values
+    FRCI = rowSums(across(c(talkabout_score, wktosolve_score, strengths_score, hopeful_score, k8q21_score, k8q30_score)), na.rm = TRUE),
+    
+    # Create categorical version of FRCI
+    FRCI_cat = factor(
+      case_when(
+        FRCI <= 1 ~ "0-1",
+        FRCI <= 3 ~ "2-3",
+        FRCI <= 6 ~ "4-6",
+        TRUE ~ NA_character_
+      ),
+      levels = c("0-1", "2-3", "4-6")
+    )
   )
 
 ```
 
 1.  `ace1` is originally coded by NSCH as a frequency measure, but it's needed as indicative variable of presence like the other `ace#` variables.
-2.  Part of this includes the calculating of the Childhood Flourishing Index (CFI) and the Family Resilience and Connection Index (FRCI) based on Bethell et al. (2019) criteria
+2.  `ace1` = Hard to Cover Basics Like Food or Housing; `ace3` = Child Experienced - Parent or Guardian Divorced; `ace4` = Child Experienced - Parent or Guardian Died; `ace5` = Child Experienced - Parent or Guardian Time in Jail; `ace6` = Child Experienced - Adults Slap, Hit, Kick, Punch Others; `ace7` = Child Experienced - Victim of Violence; `ace8` = Child Experienced - Lived with Mentally Ill; `ace9` = Child Experienced - Lived with Person with Alcohol/Drug Problem; `ace10` = Child Experienced - Treated Unfairly Because of Race; `ace11` = Child Experienced - Treated Unfairly Because of Health Condition; `ace12` = Child Experienced - Treated Unfairly Because of their Sexual Orientation or Gender Identity
+3.  `k2q33b` = Anxiety Currently; `k2q32b` = Depression Currently; `k2q34b` = Behavior Problems Currently
+4.  `k6q71_r` = Show Interest and Curiosity; `k7q85_r` = Stays Calm and In Control When Challenged; `k7q84_r` = Works to Finish Tasks Started
+5.  `talkabout` = Facing Problems - How Often Talk Together; `wktosolve` = Facing Problems - How Often Work Together; `strengths` = Facing Problems - How Often Draw on Strengths; `k8q21` = Share Ideas or Talk About Things That Matter; `k8q30` = How Well Handling Demands of Raising Children
 
 # Frequencies & Descriptive Statistics {#frequencies-descriptive-statistics}
 
 ------------------------------------------------------------------------
 
-Calculate the prevalence of neurodevelopmental disorder (NDD) diagnoses by defining the relevant variables, computing the number of total respondents for each variable, and determining the percentage of diagnoses. Display the results in a table with a table note explaining the presentation format.
+## Sample Trends of Neurodevelopmental Diagnoses
+
+Calculate yearly prevalence rates for neurodevelopmental disorder (NDD) diagnoses without survey weights. Group data by survey year, calculate prevalence for each diagnosis, and transform it into a long format. Create a line plot to visualize yearly trends in the prevalence of each NDD diagnosis, using color to differentiate between the diagnoses.
 
 ```{r neurodevelopmental-disorder-diagnoses, message=FALSE, warning=FALSE}
-# Calculate prevalence (%) of NDD diagnoses among subject sample
-variables <- c("k2q31a", "k2q35a", "k2q38a", "k2q30a", "k2q36a", "k2q60a", "k2q37a", "downsyn", "k2q61a")
-variable_names <- c("ADHD", "Autism/ASD", "Tourette’s Syndrome", "Learning Disability", 
+# Generate list of NDD diagnoses among subject sample # <1>
+variables <- c("k2q31a", "k2q35a", "k2q38a", "k2q30a", "k2q36a", "k2q60a", "k2q37a", 
+               "downsyn", "k2q61a", "k2q42a")
+variable_names <- c("ADHD", "Autism/ASD", "Tourette’s Syndrome", "Learning Disability",
                     "Development Delay", "Intellectual Disability", 
-                    "Speech/Other Language Disorder", "Down Syndrome", "Cerebral Palsy")
+                    "Speech/Other Language Disorder", "Down Syndrome", 
+                    "Cerebral Palsy", "Epilepsy")
 
-# Pre-calculate total respondents to avoid repeated computation
-total_respondents <- colSums(!is.na(neurodivergent_data[variables]))
+# Calculate yearly prevalence rates without survey weights for specific sample
+sample_prevalence <- neurodivergent_data %>%
+  group_by(survey_year) %>%
+  summarise(across(all_of(variables), 
+                   ~ mean(. == 1, na.rm = TRUE) * 100, 
+                   .names = "Prevalence_{col}")) %>%
+  pivot_longer(
+    cols = starts_with("Prevalence_"), 
+    names_to = "Diagnosis", 
+    values_to = "Prevalence"
+  ) %>%
+  mutate(
+    Diagnosis = gsub("Prevalence_", "", Diagnosis),
+    Diagnosis = factor(Diagnosis, levels = variables, labels = variable_names)
+  )
 
-# Vectorized prevalence calculation
-prevalences <- colSums(neurodivergent_data[variables] == 1, na.rm = TRUE) / total_respondents * 100
-prevalence_table <- data.frame(Diagnosis = variable_names, Prevalence = prevalences)
+# Plot the prevalence rates by year for each NDD diagnosis without survey weights
+ggplot(sample_prevalence, aes(x = survey_year, y = Prevalence, group = Diagnosis, color = Diagnosis)) +
+  geom_line(size = 1.1) +
+  geom_point(size = 2) +
+  labs(
+    title = "Yearly Prevalence of Neurodevelopmental Disorders (Sample Estimates)",
+    x = "Survey Year",
+    y = "Prevalence (%)",
+    color = "Diagnosis"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Display prevalence data in a table
-prevalence_table %>% 
-  knitr::kable("html", caption = "Prevalence of Neurodivergent Conditions") %>% 
-  kableExtra::footnote(general = "Prevalence values are presented as percentages for neurodevelopmental disorder diagnosis.")
+# Remove intermediate data frames from the global environment
+rm(design, sample_prevalence, yearly_prevalence, yearly_prevalence_df)
 
 ```
 
-Summarize key demographic characteristics of the neurodivergent sample, including descriptive statistics for age, educational attainment, sex, socioeconomic status, and race. Display the results in a table and visualize distributions using raincloud and bar plots for each demographic variable.
+1.  The following diagnoses' variables correspond to whether a child has **EVER** received such a diagnosis: `k2q31a` = ADD/ADHD; `k2q35a` = Autism ASD; `k2q38a` = Tourette Syndrome; `k2q30a` = Learning Disability; `k2q36a` = Developmental Delay; `k2q60a` = Intellectual Disability; `k2q37a` = Speech Disorder; `downsyn` = Down Syndrome; `cerpals` = Cerebral Palsy; `k2q42a` = Epilepsy
+
+## Sample Demographic Distributions
+
+Calculate and visualize the distribution of child age, educational attainment, sex, socioeconomic status, and race among neurodivergent participants. Create a raincloud plot for age distribution alongside a summary statistics table, and generate bar plots for key categorical variables, ensuring all visuals are clear and informative.
 
 ```{r subject-demograpghics, message=FALSE, warning=FALSE}
 # Calculate descriptives of age for neurodivergent participants
 neurodiv_age_summary <- neurodivergent_data %>%
-  dplyr::summarise(
-    score_mean = mean(sc_age_years, na.rm = TRUE),  # Mean
-    n = n(),  # Sample size
-    sem = sd(sc_age_years, na.rm = TRUE) / sqrt(n()),  # Standard error of the mean
-    sd = sd(sc_age_years, na.rm = TRUE),  # Standard deviation
-    min_age = min(sc_age_years, na.rm = TRUE),  # Minimum
-    q1_age = quantile(sc_age_years, 0.25, na.rm = TRUE),  # 1st Quartile
-    median_age = median(sc_age_years, na.rm = TRUE),  # Median
-    q3_age = quantile(sc_age_years, 0.75, na.rm = TRUE),  # 3rd Quartile
-    max_age = max(sc_age_years, na.rm = TRUE),  # Maximum
-    IQR_age = quantile(sc_age_years, 0.75, na.rm = TRUE) - quantile(sc_age_years, 0.25, na.rm = TRUE),  # IQR (Q3 - Q1)
+  summarise(
+    Mean = mean(sc_age_years, na.rm = TRUE),
+    n = n(),
+    SE = sd(sc_age_years, na.rm = TRUE) / sqrt(n()),
+    SD = sd(sc_age_years, na.rm = TRUE),
+    Minimum = min(sc_age_years, na.rm = TRUE),
+    Q1 = quantile(sc_age_years, 0.25, na.rm = TRUE),
+    Median = median(sc_age_years, na.rm = TRUE),
+    Q3 = quantile(sc_age_years, 0.75, na.rm = TRUE),
+    Maximum = max(sc_age_years, na.rm = TRUE),
+    IQR = quantile(sc_age_years, 0.75, na.rm = TRUE) - quantile(sc_age_years, 0.25, na.rm = TRUE),
     .groups = 'drop'
   )
 
-# Create a neat table using kable
-neurodiv_age_summary %>%
-  knitr::kable("html", col.names = c("Mean", "Sample Size", "SEM", 
-                                    "SD", "Min", "Q1", "Median", "Q3", "Max", "IQR"), caption = "Descriptive Statistics of Age for Neurodivergent Participants")
-
-# Raincloud plot of ages for neurodivergent participants with color
-ggplot(neurodivergent_data, aes(x = 1, y = sc_age_years)) + # Set x to 1, as there's only one group
-  PupillometryR::geom_flat_violin(adjust = 1.5, trim = FALSE, alpha = 0.5, color = NA, fill = "deeppink", position = position_nudge(x = 0.1, y = 0)) +
-  geom_point(alpha = 0.1, position = position_jitter(width = .05), size = .10, shape = 20, color = "deeppink") +
-  geom_boxplot(outlier.shape = NA, alpha = 0, width = 0.1, position = position_dodge(width = 0.3), colour = "black") +
-  geom_point(data = neurodiv_age_summary, aes(x = 1, y = score_mean), shape = 18, color = "deeppink", size = 3, position = position_nudge(x = 0.1)) +
-  geom_errorbar(data = neurodiv_age_summary, aes(x = 1, y = score_mean, ymin = score_mean - sem, ymax = score_mean + sem), width = 0.05, color = "deeppink", position = position_nudge(x = 0.1)) +
-  labs(
-    title = "Age Distribution of Neurodivergent Participants", 
-    y = "Age (Years)", 
-    x = "") + # No x-axis label since there's only one group
-  scale_y_continuous(breaks = seq(5, 18, by = 1), limits = c(5, 18)) + # Set y-axis range and increments
+# Create raincloud plot displaying child age descriptives
+raincloud_plot <- neurodivergent_data %>%
+  ggplot(aes(x = 1, y = sc_age_years)) +
+  PupillometryR::geom_flat_violin(
+    adjust = 1.5, trim = FALSE, alpha = 0.5, color = NA, fill = "deeppink", 
+    position = position_nudge(x = 0.2)
+  ) +
+  geom_boxplot(
+    width = 0.12, outlier.color = "black", colour = "black", fill = NA, alpha = 0.5, 
+    position = position_nudge(x = 0.2)
+  ) +
+  stat_dots(
+    dotsize = 0.1, side = "left", justification = 1, binwidth = 1, alpha = 0.5, 
+    colour = "deeppink", fill = "deeppink"
+  ) +
+  geom_point(data = neurodiv_age_summary, aes(x = 1, y = Mean), shape = 18, 
+             color = "deeppink", size = 3, position = position_nudge(x = 0.2)) +
+  geom_errorbar(data = neurodiv_age_summary, aes(x = 1, y = Mean, ymin = Mean - SE, ymax = Mean + SE), 
+                width = 0.1, color = "deeppink", position = position_nudge(x = 0.2)) +
+  labs(title = "Age Distribution of Neurodivergent Participants", y = "Age (Years)", x = "") +
+  scale_y_continuous(breaks = seq(5, 18, by = 1), limits = c(5, 18)) +
+  coord_flip() +
   theme_minimal() +
-  theme(axis.text.x = element_blank()) # Remove x-axis text
+  theme(axis.text.y = element_blank(), legend.position = "none")
+
+# Create summary statistics table as a data frame and transpose it
+summary_df <- neurodiv_age_summary %>%
+  select(Mean, SD, SE, Median, Minimum, Maximum, IQR, Q1, Q3) %>%
+  t() %>%
+  as.data.frame() %>%
+  mutate_all(~ round(., 2))
+
+# Update row names to meaningful labels
+colnames(summary_df) <- "Value"
+summary_df$Statistic <- rownames(summary_df)
+summary_df <- summary_df %>%
+  select(Statistic, Value)
+
+# Convert the transposed summary statistics data frame to a table using gridExtra
+summary_table <- gridExtra::tableGrob(summary_df, rows = NULL)
+
+# Combine the plot and summary table using gridExtra
+gridExtra::grid.arrange(raincloud_plot, summary_table, nrow = 1)
 
 # Bar plot for educational attainment counts categories
-ggplot(neurodivergent_data %>% filter(!is.na(highgrade_tvis_cat)), aes(x = highgrade_tvis_cat)) +
-  geom_bar(aes(fill = highgrade_tvis_cat), show.legend = FALSE) +
+ggplot(neurodivergent_data %>% filter(!is.na(caregiver_education)), aes(x = caregiver_education)) +
+  geom_bar(aes(fill = caregiver_education), show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
-  labs(title = "Distribution of Adults' Highest Educational Attainment",
-       x = "Educational Attainment",
-       y = "Count",
-       fill = "Educational Attainment") +
+  labs(
+    title = "Distribution of Adults' Highest Educational Attainment",
+    x = "Educational Attainment",
+    y = "Count"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -370,110 +730,278 @@ ggplot(neurodivergent_data, aes(x = sc_sex_cat)) +
   geom_bar(aes(fill = sc_sex_cat), show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
   scale_fill_manual(values = c("Male" = "lightblue", "Female" = "pink")) +
-  labs(title = "Distribution of Sex",
-       x = "Sex",
-       y = "Count") +
+  labs(
+    title = "Sex Distribution of Neurodivergent Participants",
+    x = "Sex",
+    y = "Count"
+  ) +
   theme_minimal()
 
 # Bar plot for SES counts categories
-ggplot(neurodivergent_data, aes(x = fpl_cat)) +
-  geom_bar(aes(fill = fpl_cat), show.legend = FALSE) +
+ggplot(neurodivergent_data, aes(x = fpl_category)) +
+  geom_bar(aes(fill = fpl_category), show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(title = "Distribution of Socioeconomic Status (FPL)",
-       x = "Federal Poverty Level Groups",
-       y = "Count") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 0))
+  labs(
+    title = "Distribution of Socioeconomic Status (FPL)",
+    x = "Federal Poverty Level Groups",
+    y = "Count"
+  ) +
+  theme_minimal()
 
 # Bar plot for race counts categories
 ggplot(neurodivergent_data, aes(x = sc_race_cat)) +
   geom_bar(aes(fill = sc_race_cat), show.legend = FALSE) +
-  geom_text(stat = 'count', aes(label = ..count..), vjust=-0.3, size=3.5) +
-  labs(title = "Distribution by Race",
-       x = "Race",
-       y = "Count") +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.3, size = 3.5) +
+  labs(
+    title = "Race Distribution of Neurodivergent Participants",
+    x = "Race",
+    y = "Count"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+# Remove intermediate data frames from the global environment
+rm(neurodiv_age_summary, raincloud_plot, summary_df, summary_table)
+
 ```
 
-Calculate and display the number of subjects classified as 'Flourishing' based on a Childhood Flourishing Index (CFI) score of 3. Visualize the distribution of children by CFI score using bar plots for both the raw CFI scores and the dichotomized CFI variable.
+## Sample Trends of Child Flourishing
+
+Create visualizations for the Childhood Flourishing Index (CFI) and dichotomous CFI variable (`Flourishing` vs `Not Flourishing`). Generate bar plots to show the distribution of these variables and line plots to display yearly prevalence rates across survey years.
 
 ```{r child-flourishing-index, message=FALSE, warning=FALSE}
-# Count the number of subjects with a CFI score of 3 using a logical condition, as this is considered 'Flourishing.'
-num_subjects_cfi_3 <- sum(neurodivergent_data$CFI == 3, na.rm = TRUE)
-cat("Number of Subjects Flourishing (CFI Score of 3):", num_subjects_cfi_3, "\n")
-
-# Bar plot of CFI counts categories
+# Bar plot for Childhood Flourishing Index (CFI) Score distribution
 ggplot(neurodivergent_data, aes(x = factor(CFI), fill = factor(CFI))) +
   geom_bar(show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(x = "Childhood Flourishing Index (CFI) Score",
-       y = "Number of Children",
-       fill = "CFI Score",
-       title = "Distribution of Children by CFI Score") +
+  labs(
+    x = "Childhood Flourishing Index (CFI) Score",
+    y = "Number of Children",
+    title = "Distribution of Children by CFI Score"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 0))
 
-# Bar plot of CFI_dich counts categories
-ggplot(neurodivergent_data, aes(x = CFI_dich)) +
-  geom_bar(aes(fill = CFI_dich), show.legend = FALSE) +
+# Calculate prevalence of CFI scores grouped by year
+flourishing_prevalence <- neurodivergent_data %>%
+  group_by(survey_year, CFI) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(survey_year) %>%
+  mutate(
+    Total = sum(Count),
+    Prevalence = (Count / Total) * 100
+  )
+
+# Line plot for yearly prevalence of CFI scores
+ggplot(flourishing_prevalence, aes(x = survey_year, y = Prevalence, color = as.factor(CFI), group = CFI)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  labs(
+    title = "Yearly Prevalence of Child Flourishing Index Scores (Sample Estimate)",
+    x = "Survey Year",
+    y = "Prevalence (%)",
+    color = "Child Flourishing Index Score"
+  ) +
+  theme_minimal()
+
+# Bar plot for CFI dichotomous variable distribution
+ggplot(neurodivergent_data, aes(x = CFI_dich, fill = CFI_dich)) +
+  geom_bar(show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(title = "Distribution of CFI Dichotomous Variable",
-       x = "Child Flourishing Index (Dichotomous)",
-       y = "Count",
-       fill = "CFI") +
+  labs(
+    title = "Distribution of CFI Dichotomous Variable",
+    x = "Child Flourishing Index (Dichotomous)",
+    y = "Count"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 0))
+
+# Calculate prevalence of flourishing status (CFI_dich) grouped by year
+flourishing_prevalence_status <- neurodivergent_data %>%
+  group_by(survey_year, CFI_dich) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(survey_year) %>%
+  mutate(
+    Total = sum(Count),
+    Prevalence = (Count / Total) * 100
+  )
+
+# Line plot for yearly prevalence of flourishing status
+ggplot(flourishing_prevalence_status, aes(x = survey_year, y = Prevalence, color = CFI_dich, group = CFI_dich)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  labs(
+    title = "Yearly Prevalence of Child Flourishing Status (Sample Estimate)",
+    x = "Survey Year",
+    y = "Prevalence (%)",
+    color = "Child Flourishing Status"
+  ) +
+  theme_minimal()
+
+# Remove intermediate data frames from the global environment
+rm(flourishing_prevalence, flourishing_prevalence_status)
 
 ```
 
-Display the number of subjects in each Family Resilience and Connection Index (FRCI) score category. Visualize the distribution of children by FRCI score using bar plots for both the raw FRCI scores and the categorized FRCI variable.
+## Sample Trends of Family Resilience & Connection
+
+Create visualizations for the Family Resilience and Connection Index (FRCI) scores and categories. Generate bar plots to show the distribution of FRCI scores and categories, and line plots to display yearly prevalence rates across survey years for both continuous FRCI scores and categorical FRCI status.
 
 ```{r family-resilience-connection-index, message=FALSE, warning=FALSE}
-# Bar plot of FRCI counts categories
+# Bar plot for Family Resilience and Connection Index (FRCI) Score distribution
 ggplot(neurodivergent_data, aes(x = factor(FRCI), fill = factor(FRCI))) +
   geom_bar(show.legend = FALSE) +
   geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(x = "Family Resilience and Connection Index (FRCI) Score",
-       y = "Number of Children",
-       fill = "FRCI Score",
-       title = "Distribution of Children by FRCI Score") +
+  labs(
+    x = "Family Resilience and Connection Index (FRCI) Score",
+    y = "Number of Children",
+    title = "Distribution of Children by FRCI Score"
+  ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 0))
 
-# Bar plot of FRCI_cat counts categories
-ggplot(neurodivergent_data, aes(x = FRCI_cat)) +
-  geom_bar(aes(fill = FRCI_cat), show.legend = FALSE) +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
-  labs(title = "Distribution of FRCI Categorical Variable",
-       x = "Family Resilience and Connection Index (Categorical)",
-       y = "Count",
-       fill = "FRCI") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 0))
-
-```
-
-Construct and display a frequency table that shows the number of participants with Anxiety, Depression, and Behavioral Issues based on responses indicating "Yes" for each condition. Present the results in an HTML table format using `kable`.
-
-```{r mental-health-outcomes, message=FALSE, warning=FALSE}
-# Constructing the frequency table for Anxiety, Depression, and Behavioral Issues where the response is "Yes"
-neurodiv_freq_table <- neurodivergent_data %>%
-  dplyr::summarise(
-    Anxiety_Yes = sum(Anxiety == "Yes", na.rm = TRUE),
-    Depression_Yes = sum(Depression == "Yes", na.rm = TRUE),
-    Behavioral_Problems_Yes = sum(Behavioral_Problems == "Yes", na.rm = TRUE)
+# Calculate prevalence of FRCI scores grouped by year
+frci_prevalence_scores <- neurodivergent_data %>%
+  group_by(survey_year, FRCI) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(survey_year) %>%
+  mutate(
+    Total = sum(Count),
+    Prevalence = (Count / Total) * 100
   )
 
-# Display table in a simple HTML format using kable
-neurodiv_freq_table %>%
-  knitr::kable("html", col.names = c("Anxiety", "Depression", "Behavioral Problems"), 
-               caption = "Frequency of Mental Health Conditions in Neurodivergent Sample")
+# Line plot for yearly prevalence of FRCI scores
+ggplot(frci_prevalence_scores, aes(x = survey_year, y = Prevalence, color = as.factor(FRCI), group = FRCI)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  labs(
+    title = "Yearly Prevalence of Family Resilience & Connection Index (FRCI) Scores (Sample Estimate)",
+    x = "Survey Year",
+    y = "Prevalence (%)",
+    color = "FRCI Score"
+  ) +
+  theme_minimal()
+
+# Bar plot for FRCI categorical variable distribution
+ggplot(neurodivergent_data, aes(x = FRCI_cat, fill = FRCI_cat)) +
+  geom_bar(show.legend = FALSE) +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
+  labs(
+    title = "Distribution of FRCI Categorical Variable",
+    x = "Family Resilience and Connection Index (Categorical)",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0))
+
+# Calculate prevalence of FRCI categories grouped by year
+frci_prevalence_categories <- neurodivergent_data %>%
+  group_by(survey_year, FRCI_cat) %>%
+  summarise(
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(survey_year) %>%
+  mutate(
+    Total = sum(Count),
+    Prevalence = (Count / Total) * 100
+  )
+
+# Line plot for yearly prevalence of FRCI categories
+ggplot(frci_prevalence_categories, aes(x = survey_year, y = Prevalence, color = FRCI_cat, group = FRCI_cat)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  labs(
+    title = "Yearly Prevalence of Family Resilience & Connection Index Categories (Sample Estimate)",
+    x = "Survey Year",
+    y = "Prevalence (%)",
+    color = "FRCI Category"
+  ) +
+  theme_minimal()
+
+# Remove intermediate data frames from the global environment
+rm(frci_prevalence_scores, frci_prevalence_categories)
 
 ```
 
-Visualize the distribution of ACE counts among children using a bar plot and calculate cross-tabulations for the number and percentage of participants with Anxiety, Depression, Behavioral Issues, and Flourishing status across ACE categories. Format the table to display values as "n (percentage)" for each ACE category and include a footnote explaining the presentation format.
+## Sample Trends of Psychopathology
+
+Create a stacked bar plot to show the distribution of psychopathology outcomes across participants. Calculate the yearly prevalence of anxiety, depression, and behavioral problems, and visualize these trends using a line plot.
+
+```{r mental-health-outcomes, message=FALSE, warning=FALSE}
+# Create a long-format data frame for plotting psychopathology outcomes
+psychopathology_data <- neurodivergent_data %>%
+  select(Anxiety, Depression, Behavioral_Problems) %>%
+  pivot_longer(cols = everything(), names_to = "Psychopathology", values_to = "Response") %>%
+  filter(!is.na(Response)) # Exclude missing responses
+
+# Create a stacked bar plot for psychopathology outcome distribution
+ggplot(psychopathology_data, aes(x = Psychopathology, fill = Response)) +
+  geom_bar(position = "stack") +
+  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust = 0.5), color = "white") +
+  scale_fill_manual(values = c("Yes" = "blue", "No" = "red")) +
+  labs(
+    title = "Distribution of Psychopathology Outcomes",
+    x = "Psychopathology Outcome",
+    y = "Count",
+    fill = "Response"
+  ) +
+  theme_minimal()
+
+# List of psychopathology outcomes for analysis
+psychopathology_variables <- c("Anxiety", "Depression", "Behavioral_Problems")
+
+# Calculate prevalence of each psychopathology outcome by survey year
+psychopathology_prevalence <- lapply(psychopathology_variables, function(var) {
+  neurodivergent_data %>%
+    group_by(survey_year, !!sym(var)) %>%
+    summarise(
+      Count = n(), # Count of each level
+      .groups = "drop"
+    ) %>%
+    group_by(survey_year) %>%
+    mutate(
+      Total = sum(Count), # Total count per year
+      Prevalence = (Count / Total) * 100, # Calculate prevalence as a percentage
+      Outcome = var # Add the outcome name
+    ) %>%
+    filter(!!sym(var) == "Yes") # Only consider "Yes" (those with the outcome)
+}) %>%
+  bind_rows() # Combine all results into one data frame
+
+# Visualize the prevalence of psychopathology outcomes by year using a line plot
+ggplot(psychopathology_prevalence, aes(x = survey_year, y = Prevalence, color = Outcome, group = Outcome)) +
+  geom_line(size = 1.2) + # Add lines
+  geom_point(size = 3) + # Add points
+  labs(
+    title = "Yearly Prevalence of Psychopathology Outcomes (Sample Estimate)",
+    x = "Survey Year",
+    y = "Prevalence (%)",
+    color = "Outcome"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 0)
+  )
+
+# Remove intermediate data frames from the global environment
+rm(psychopathology_data, psychopathology_prevalence)
+
+
+```
+
+## Distribution & Cross-Tabulations of ACEs
+
+Create a bar plot to visualize the distribution of children by ACE counts. Conduct cross-tabulations between ACE counts and psychopathology/flourishing variables, as well as between psychopathology outcomes and the flourishing variable, displaying the results in table format.
 
 ```{r aces-cross-tabulations, message=FALSE, warning=FALSE}
 # Bar plot of ACE counts categories
@@ -485,36 +1013,13 @@ ggplot(neurodivergent_data, aes(x = factor(ace_counts), fill = factor(ace_counts
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 0))
 
-# Define the total number of respondents for each ACE category
-ace_totals <- c(
-  "0 ACEs" = 12431,  # Total respondents with 0 ACEs
-  "1 ACE" = 13433,  # Total respondents with 1 ACE
-  "2-3 ACEs" = 12180,  # Total respondents with 2-3 ACEs
-  "4+ ACEs" = 6732   # Total respondents with 4+ ACEs
-)
+# Cross-tabulation between psychopathology/flourishing variables and ACEs count variable # <1>
+crosstable(neurodivergent_data, c(Anxiety, Depression, Behavioral_Problems, CFI_dich), by = ace_counts, showNA = "no", percent_digits = 1, total = "both") %>%
+  as_flextable()
 
-# Compute the cross-tabulations, filtering out NA values and excluding "No" responses for Anxiety, Depression, and Behavioral Issues # <1>
-cross_tabs <- neurodivergent_data %>%
-  select(Anxiety, Depression, Behavioral_Problems, CFI_dich, ace_counts) %>%
-  pivot_longer(cols = c(Anxiety, Depression, Behavioral_Problems, CFI_dich), names_to = "Condition", values_to = "Status") %>%
-  filter(!is.na(Status), !is.na(ace_counts), !(Condition %in% c("Anxiety", "Depression", "Behavioral_Problems") & Status == "No")) %>%  # Filter out NA values and "No" responses
-  group_by(Condition, Status, ace_counts) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  group_by(Condition, Status) %>%
-  # Calculate percentage by dividing n by the total number of respondents for each ACE category and create a string in the format n (percent)
-  summarise(
-    `0 ACEs` = if_else(any(ace_counts == "0 ACEs"), paste0(n[ace_counts == "0 ACEs"], " (", round(n[ace_counts == "0 ACEs"] / ace_totals["0 ACEs"] * 100, 1), ")"), NA_character_),
-    `1 ACE` = if_else(any(ace_counts == "1 ACE"), paste0(n[ace_counts == "1 ACE"], " (", round(n[ace_counts == "1 ACE"] / ace_totals["1 ACE"] * 100, 1), ")"), NA_character_),
-    `2-3 ACEs` = if_else(any(ace_counts == "2-3 ACEs"), paste0(n[ace_counts == "2-3 ACEs"], " (", round(n[ace_counts == "2-3 ACEs"] / ace_totals["2-3 ACEs"] * 100, 1), ")"), NA_character_),
-    `4+ ACEs` = if_else(any(ace_counts == "4+ ACEs"), paste0(n[ace_counts == "4+ ACEs"], " (", round(n[ace_counts == "4+ ACEs"] / ace_totals["4+ ACEs"] * 100, 1), ")"), NA_character_)
-  )
-
-# Format the table for presentation using 'kable' with the footnote spanning the full width
-cross_tabs %>%
-  knitr::kable("html", caption = "Frequency and Percentage of Psychopathology and Flourishing across ACEs Categories") %>%
-  kableExtra::kable_styling(full_width = TRUE) %>%  # Ensures the table spans the full width
-  kableExtra::footnote(general = "Values are presented as n (percentage) for each ACEs category. Cross-tabulations show the number and percentage of individuals with a specific mental health condition or flourishing status across different ACE categories.",
-                       footnote_as_chunk = TRUE)  # Formats the footnote to span full width
+# Cross-tabulation between psychopathology outcomes and flourishing variable
+crosstable(neurodivergent_data, c(Anxiety, Depression, Behavioral_Problems), by = CFI_dich, showNA = "no", percent_digits = 1, total = "both") %>%
+  as_flextable()
 
 ```
 
@@ -526,7 +1031,7 @@ cross_tabs %>%
 
 ## Interaction Models
 
-Run logistic regression models that incorporate interaction terms between the ACE counts and the Child Flourishing Index (`CFI_dich`) for three different mental health outcomes (Anxiety, Depression, Behavioral Issues). Then, create individual summary tables for each model (without exponentiating the coefficients), highlighting statistically significant p-values. Finally, merge the tables into a single output, displaying all models side by side with appropriate labels and formatting.
+Fit three logistic regression models with survey weights to examine the moderating effect of Child Flourishing Index (CFI) on the association between Adverse Childhood Experiences (ACEs) and psychopathology outcomes (anxiety, depression, behavioral problems). Extract residuals, check heteroscedasticity using Breusch-Pagan tests, calculate Cook's distance for influential observations, and obtain robust standard errors. Create summary tables with robust standard errors and False Discovery Rate (FDR) adjusted p-values for each model.
 
 ::: {.panel-tabset .nav-pills}
 ### Anxiety Model
@@ -536,34 +1041,65 @@ Run logistic regression models that incorporate interaction terms between the AC
 design <- svydesign(ids = ~1, weights = ~fwc, data = neurodivergent_data) # will be used across all models
 
 # Logistic regression model with CFI_dich as a moderator for Anxiety, using robust standard errors
-model_anx_mod <- svyglm(Anxiety ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, 
+model_anx_mod <- svyglm(Anxiety ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + 
+                        fpl_category + caregiver_education + sc_age_years + survey_year + 
+                        caregiver_mental_health + child_gen_health + 
+                        caregiver_composition + physical_resources + 
+                        environmental_threats + collective_efficacy +
+                        special_healthcare_needs + total_severity_score + 
+                        HAI_category + barriers_cat + insurance_type + IAI_category, 
                         design = design, family = quasibinomial())
 
+# Extract residuals from the logistic regression model
+residuals_anx <- residuals(model_anx_mod, type = "deviance")
+
+# Plot residuals to visually inspect them
+plot(residuals_anx, main = "Residuals Plot for Anxiety Model", ylab = "Residuals", xlab = "Index", pch = 20, col = "blue")
+abline(h = 0, col = "red", lty = 2)
+
 # Perform the Breusch-Pagan test for heteroscedasticity
-lmtest::bptest(model_anx_mod)
+bptest(model_anx_mod)
 
 # Calculate Cook's distance for influential observations (leverage) in each model
 cooks_anx <- cooks.distance(model_anx_mod)
 
 # Plot for Anxiety model
-plot(cooks_anx, type = "h", main = "Cook's Distance for Anxiety Model",
+plot(cooks_anx, type = "p", main = "Cook's Distance for Anxiety Model",
      ylab = "Cook's Distance", xlab = "Observation Index")
-abline(h = 4 / length(cooks_d_dan), col = "red", lty = 2)  # Add a reference line for influential points
+abline(h = 4 / length(cooks_anx), col = "red", lty = 2) # Add a reference line for influential points
 
 # Obtain robust standard errors for Anxiety model
-robust_anx <- lmtest::coeftest(model_anx_mod, vcov = vcovHC(model_anx_mod, type = "HC3"))
+robust_anx <- coeftest(model_anx_mod, vcov = vcovHC(model_anx_mod, type = "HC0"))
 
 # Create a summary table for the Anxiety model with robust standard errors
 tbl_anx_mod <- tbl_regression(model_anx_mod, exponentiate = TRUE, label = list(
       ace_counts ~ "ACEs",
       CFI_dich ~ "Child Flourishing Index",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
+      fpl_category ~ "Federal Poverty Level",
+      caregiver_education ~ "Caregiver Education",
       sc_age_years ~ "Child Age",
       sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
+      sc_sex_cat ~ "Child Sex",
+      survey_year ~ "Survey Year",
+      caregiver_mental_health ~ "Caregiver Mental Health",
+      child_gen_health ~ "Child General Health",
+      caregiver_composition ~ "Caregiver Composition",
+      physical_resources ~ "Neighborhood Physical Resources",
+      environmental_threats ~ "Neighborhood Environmental Threats",
+      collective_efficacy ~ "Neighborhood Collective Efficacy",
+      special_healthcare_needs ~ "Special Healthcare Needs",
+      total_severity_score ~ "NDD Severity (Total)",
+      HAI_category ~ "Healthcare Access Index",
+      barriers_cat ~ "Access Barriers Index",
+      insurance_type ~ "Insurance Type",
+      IAI_category ~ "Insurance Adequacy Index"
     )) %>%
-  bold_p(t = 0.05)
+  add_q() %>% # adjusts p-values for multiple testing (FDR)
+  bold_p(t = 0.05) %>%
+  bold_p(t = 0.05, q = TRUE) %>% # now bold q-values under the threshold of 0.05
+  italicize_levels() %>%
+  gtsummary::as_gt() %>%
+  gt::tab_source_note(gt::md("*Note*. This logistic regression model examines the moderating effect of the Child Flourishing Index (CFI) on the association between Adverse Childhood Experiences (ACEs) and anxiety outcomes in neurodivergent children. Survey weights from the National Survey of Children's Health (NSCH) were applied to ensure the representativeness of the target population. Robust standard errors (HC0) were used to account for potential heteroscedasticity not fully addressed by the survey weights. HC0 provides the original White standard errors, which are suitable for large samples and do not include small-sample bias corrections. Covariates include child demographics, family characteristics, neighborhood conditions and survey year, with FDR-adjusted p-values to account for multiple comparisons."))
 
 # Print table to review results # <1>
 tbl_anx_mod
@@ -574,35 +1110,65 @@ tbl_anx_mod
 
 ```{r depression-flourishing-model, message=FALSE, warning=FALSE}
 # Logistic regression model with CFI_dich as a moderator for Depression, using robust standard errors
-model_dep_mod <- svyglm(Depression ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + 
-                        sc_age_years, 
+model_dep_mod <- svyglm(Depression ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + 
+                        fpl_category + caregiver_education + sc_age_years + survey_year + 
+                        caregiver_mental_health + child_gen_health + 
+                        caregiver_composition + physical_resources + 
+                        environmental_threats + collective_efficacy +
+                        special_healthcare_needs + total_severity_score + 
+                        HAI_category + barriers_cat + insurance_type + IAI_category,  
                         design = design, family = quasibinomial())
 
+# Extract residuals from the logistic regression model
+residuals_dep <- residuals(model_dep_mod, type = "deviance")
+
+# Plot residuals to visually inspect them
+plot(residuals_dep, main = "Residuals Plot for Depression Model", ylab = "Residuals", xlab = "Index", pch = 20, col = "blue")
+abline(h = 0, col = "red", lty = 2)
+
 # Perform the Breusch-Pagan test for heteroscedasticity
-lmtest::bptest(model_dep_mod)
+bptest(model_dep_mod)
 
 # Calculate Cook's distance for influential observations (leverage) in each model
 cooks_dep <- cooks.distance(model_dep_mod)
 
 # Plot for Depression model
-plot(cooks_dep, type = "h", main = "Cook's Distance for Depression Model",
+plot(cooks_dep, type = "p", main = "Cook's Distance for Depression Model",
      ylab = "Cook's Distance", xlab = "Observation Index")
-abline(h = 4 / length(cooks_d_sn), col = "green", lty = 2)  # Add a reference line for influential points
+abline(h = 4 / length(cooks_dep), col = "red", lty = 2) # Add a reference line for influential points
 
 # Obtain robust standard errors for Depression model
-robust_dep <- lmtest::coeftest(model_dep_mod, vcov = vcovHC(model_dep_mod, type = "HC3"))
+robust_dep <- coeftest(model_dep_mod, vcov = vcovHC(model_dep_mod, type = "HC0"))
 
 # Create a summary table for the Depression model with robust standard errors
 tbl_dep_mod <- tbl_regression(model_dep_mod, exponentiate = TRUE, label = list(
       ace_counts ~ "ACEs",
       CFI_dich ~ "Child Flourishing Index",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
+      fpl_category ~ "Federal Poverty Level",
+      caregiver_education ~ "Caregiver Education",
       sc_age_years ~ "Child Age",
       sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
+      sc_sex_cat ~ "Child Sex",
+      survey_year ~ "Survey Year",
+      caregiver_mental_health ~ "Caregiver Mental Health",
+      child_gen_health ~ "Child General Health",
+      caregiver_composition ~ "Caregiver Composition",
+      physical_resources ~ "Neighborhood Physical Resources",
+      environmental_threats ~ "Neighborhood Environmental Threats",
+      collective_efficacy ~ "Neighborhood Collective Efficacy",
+      special_healthcare_needs ~ "Special Healthcare Needs",
+      total_severity_score ~ "NDD Severity (Total)",
+      HAI_category ~ "Healthcare Access Index",
+      barriers_cat ~ "Access Barriers Index",
+      insurance_type ~ "Insurance Type",
+      IAI_category ~ "Insurance Adequacy Index"
     )) %>%
-  bold_p(t = 0.05)
+  add_q() %>% # adjusts p-values for multiple testing (FDR)
+  bold_p(t = 0.05) %>%
+  bold_p(t = 0.05, q = TRUE) %>% # now bold q-values under the threshold of 0.05
+  italicize_levels() %>%
+  gtsummary::as_gt() %>%
+  gt::tab_source_note(gt::md("*Note*. This logistic regression model examines the moderating effect of the Child Flourishing Index (CFI) on the association between Adverse Childhood Experiences (ACEs) and depression outcomes in neurodivergent children. Survey weights from the National Survey of Children's Health (NSCH) were applied to ensure the representativeness of the target population. Robust standard errors (HC0) were used to account for potential heteroscedasticity not fully addressed by the survey weights. HC0 provides the original White standard errors, which are suitable for large samples and do not include small-sample bias corrections. Covariates include child demographics, family characteristics, neighborhood conditions and survey year, with FDR-adjusted p-values to account for multiple comparisons."))
 
 # Print table to review results # <2>
 tbl_dep_mod
@@ -613,35 +1179,65 @@ tbl_dep_mod
 
 ```{r behavioral-problems-flourishing-model, message=FALSE, warning=FALSE}
 # Logistic regression model with CFI_dich as a moderator for Behavioral Problems, using robust standard errors
-model_beh_mod <- svyglm(Behavioral_Problems ~ ace_counts * CFI_dich + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + 
-                        sc_age_years, 
+model_beh_mod <- svyglm(Behavioral_Problems ~ ace_counts * CFI_dich + sc_race_cat + 
+                        sc_sex_cat + fpl_category + caregiver_education + sc_age_years + 
+                        survey_year + caregiver_mental_health + child_gen_health + 
+                        caregiver_composition + physical_resources + environmental_threats +
+                        collective_efficacy + special_healthcare_needs + 
+                        total_severity_score + HAI_category + barriers_cat + 
+                        insurance_type + IAI_category,
                         design = design, family = quasibinomial())
 
+# Extract residuals from the logistic regression model
+residuals_beh <- residuals(model_beh_mod, type = "deviance")
+
+# Plot residuals to visually inspect them
+plot(residuals_beh, main = "Residuals Plot for Behavioral Problems Model", ylab = "Residuals", xlab = "Index", pch = 20, col = "blue")
+abline(h = 0, col = "red", lty = 2)
+
 # Perform the Breusch-Pagan test for heteroscedasticity
-lmtest::bptest(model_beh_mod)
+bptest(model_beh_mod)
 
 # Calculate Cook's distance for influential observations (leverage) in each model
 cooks_beh <- cooks.distance(model_beh_mod)
 
 # Plot for Behavioral Problems model
-plot(cooks_beh, type = "h", main = "Cook's Distance for Behavioral Problems Model",
+plot(cooks_beh, type = "p", main = "Cook's Distance for Behavioral Problems Model",
      ylab = "Cook's Distance", xlab = "Observation Index")
-abline(h = 4 / length(cooks_d_ln), col = "blue", lty = 2)  # Add a reference line for influential points
+abline(h = 4 / length(cooks_beh), col = "red", lty = 2) # Add a reference line for influential points
 
 # Obtain robust standard errors for Behavioral Problems model
-robust_beh <- lmtest::coeftest(model_beh_mod, vcov = vcovHC(model_beh_mod, type = "HC3"))
+robust_beh <- coeftest(model_beh_mod, vcov = vcovHC(model_beh_mod, type = "HC0"))
 
 # Create a summary table for the Behavioral Problems model with robust standard errors
 tbl_beh_mod <- tbl_regression(model_beh_mod, exponentiate = TRUE, label = list( 
       ace_counts ~ "ACEs",
       CFI_dich ~ "Child Flourishing Index",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
+      fpl_category ~ "Federal Poverty Level",
+      caregiver_education ~ "Caregiver Education",
       sc_age_years ~ "Child Age",
       sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
+      sc_sex_cat ~ "Child Sex",
+      survey_year ~ "Survey Year",
+      caregiver_mental_health ~ "Caregiver Mental Health",
+      child_gen_health ~ "Child General Health",
+      caregiver_composition ~ "Caregiver Composition",
+      physical_resources ~ "Neighborhood Physical Resources",
+      environmental_threats ~ "Neighborhood Environmental Threats",
+      collective_efficacy ~ "Neighborhood Collective Efficacy",
+      special_healthcare_needs ~ "Special Healthcare Needs",
+      total_severity_score ~ "NDD Severity (Total)",
+      HAI_category ~ "Healthcare Access Index",
+      barriers_cat ~ "Access Barriers Index",
+      insurance_type ~ "Insurance Type",
+      IAI_category ~ "Insurance Adequacy Index"
+    )) %>%
+  add_q() %>% # adjusts p-values for multiple testing (FDR)
+  bold_p(t = 0.05) %>%
+  bold_p(t = 0.05, q = TRUE) %>% # now bold q-values under the threshold of 0.05
+  italicize_levels() %>%
+  gtsummary::as_gt() %>%
+  gt::tab_source_note(gt::md("*Note*. This logistic regression model examines the moderating effect of the Child Flourishing Index (CFI) on the association between Adverse Childhood Experiences (ACEs) and behavioral problem outcomes in neurodivergent children. Survey weights from the National Survey of Children's Health (NSCH) were applied to ensure the representativeness of the target population. Robust standard errors (HC0) were used to account for potential heteroscedasticity not fully addressed by the survey weights. HC0 provides the original White standard errors, which are suitable for large samples and do not include small-sample bias corrections. Covariates include child demographics, family characteristics, neighborhood conditions and survey year, with FDR-adjusted p-values to account for multiple comparisons."))
 
 # Print table to review results # <3>
 tbl_beh_mod
@@ -649,117 +1245,220 @@ tbl_beh_mod
 ```
 :::
 
-1.  The **anxiety** model **did not** yield significant interactions, so we **do not** proceed with stratified post-hoc analyses.
-2.  The **depression** model **did** yield significant interactions, so we **do** proceed with stratified post-hoc analyses.
-3.  The **behavioral problems** model **did** yield significant interactions, so we **do** proceed stratified with post-hoc analyses.
+1.  The **anxiety** model **did not** yield significant interactions, so we **do not** proceed with stratified post-hoc analyses. Instead, we will run main effect models without interaction terms.
+2.  The **depression** model **did not** yield significant interactions, so we **do not** proceed with stratified post-hoc analyses. Instead, we will run main effect models without interaction terms.
+3.  The **behavioral problems** model **did** **not** yield significant interactions, so we **do not** proceed stratified with post-hoc analyses. Instead, we will run main effect models without interaction terms.
 
-Subset the data into flourishing and non-flourishing groups. Then, run logistic regression models for Depression and Behavioral Problems separately for each group, adjusting for covariates (ACE counts, race, sex, SES, education, and age). Create summary tables for each model, with p-values highlighted for significance. Finally, merge and display the tables for both flourishing and non-flourishing samples, stratified by Depression and Behavioral Problems.
+## Main Effect Models
 
-```{r Post-Hoc Analyses, message=FALSE, warning=FALSE}
-# Subset the flourishing sample
-flourishing_sample <- neurodivergent_data %>%
-  filter(CFI_dich == "Flourishing")
+Fit three logistic regression models with survey weights to examine the main effects of ACE counts and the Child Flourishing Index (CFI_dich) on psychopathology outcomes (anxiety, depression, behavioral problems). Extract residuals, check heteroscedasticity using Breusch-Pagan tests, calculate Cook's distance for influential observations, and obtain robust standard errors. Create summary tables with robust standard errors and False Discovery Rate (FDR) adjusted p-values for each model.
 
-# Subset the not flourishing sample
-not_flourishing_sample <- neurodivergent_data %>%
-  filter(CFI_dich == "Not Flourishing")
+::: {.panel-tabset .nav-pills}
+### Anxiety Model
 
-# Stratified logistic regression models
-flourish_model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = flourishing_sample, family = binomial)
+```{r anxiety-model, message=FALSE, warning=FALSE}
+# Logistic regression model for main effects using robust standard errors
+model_anx <- svyglm(Anxiety ~ ace_counts + CFI_dich + sc_race_cat + sc_sex_cat + 
+                        fpl_category + caregiver_education + sc_age_years + survey_year + 
+                        caregiver_mental_health + child_gen_health + 
+                        caregiver_composition + physical_resources + 
+                        environmental_threats + collective_efficacy +
+                        special_healthcare_needs + total_severity_score + 
+                        HAI_category + barriers_cat + insurance_type + IAI_category, 
+                        design = design, family = quasibinomial())
 
-non_flourish_model_dep <- glm(Depression ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = not_flourishing_sample, family = binomial)
+# Extract residuals from the logistic regression model
+residuals_anx <- residuals(model_anx, type = "deviance")
 
-flourish_model_beh <- glm(Behavioral_Problems ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = flourishing_sample, family = binomial)
+# Plot residuals to visually inspect them
+plot(residuals_anx, main = "Residuals Plot for Anxiety Model", ylab = "Residuals", xlab = "Index", pch = 20, col = "blue")
+abline(h = 0, col = "red", lty = 2)
 
-non_flourish_model_beh <- glm(Behavioral_Problems ~ ace_counts + sc_race_cat + sc_sex_cat + fpl_cat + highgrade_tvis_cat + sc_age_years, data = not_flourishing_sample, family = binomial)
+# Perform the Breusch-Pagan test for heteroscedasticity
+bptest(model_anx)
 
-# Create a summary table for the Flourishing Depression model
-tbl_dep_flourish <- tbl_regression(flourish_model_dep, exponentiate = TRUE, label = list(
+# Calculate Cook's distance for influential observations (leverage) in each model
+cooks_anx <- cooks.distance(model_anx)
+
+# Plot for Anxiety model
+plot(cooks_anx, type = "p", main = "Cook's Distance for Anxiety Model",
+     ylab = "Cook's Distance", xlab = "Observation Index")
+abline(h = 4 / length(cooks_anx), col = "red", lty = 2) # Add a reference line for influential points
+
+# Obtain robust standard errors for Anxiety model
+robust_anx <- coeftest(model_anx, vcov = vcovHC(model_anx, type = "HC0"))
+
+# Create a summary table for the Anxiety model with robust standard errors
+tbl_anx <- tbl_regression(model_anx, exponentiate = TRUE, label = list(
       ace_counts ~ "ACEs",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_category ~ "Federal Poverty Level",
+      caregiver_education ~ "Caregiver Education",
       sc_age_years ~ "Child Age",
       sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
+      sc_sex_cat ~ "Child Sex",
+      survey_year ~ "Survey Year",
+      caregiver_mental_health ~ "Caregiver Mental Health",
+      child_gen_health ~ "Child General Health",
+      caregiver_composition ~ "Caregiver Composition",
+      physical_resources ~ "Neighborhood Physical Resources",
+      environmental_threats ~ "Neighborhood Environmental Threats",
+      collective_efficacy ~ "Neighborhood Collective Efficacy",
+      special_healthcare_needs ~ "Special Healthcare Needs",
+      total_severity_score ~ "NDD Severity (Total)",
+      HAI_category ~ "Healthcare Access Index",
+      barriers_cat ~ "Access Barriers Index",
+      insurance_type ~ "Insurance Type",
+      IAI_category ~ "Insurance Adequacy Index"
+    )) %>%
+  add_q() %>% # adjusts p-values for multiple testing (FDR)
+  bold_p(t = 0.05) %>%
+  bold_p(t = 0.05, q = TRUE) %>% # now bold q-values under the threshold of 0.05
+  italicize_levels() %>%
+  gtsummary::as_gt() %>%
+  gt::tab_source_note(gt::md("*Note*. This logistic regression model examines the association between Adverse Childhood Experiences (ACEs) and anxiety outcomes in neurodivergent children, including main effects of the Child Flourishing Index (CFI) without interaction terms. Survey weights from the National Survey of Children's Health (NSCH) were applied to ensure the representativeness of the target population. Robust standard errors (HC0) were used to account for potential heteroscedasticity not fully addressed by the survey weights. HC0 provides the original White standard errors, which are suitable for large samples and do not include small-sample bias corrections. Covariates include child demographics, family characteristics, neighborhood conditions, and survey year, with FDR-adjusted p-values to account for multiple comparisons."))
 
-# Create a summary table for the Non-Flourishing Depression model
-tbl_dep_non_flourish <- tbl_regression(non_flourish_model_dep, exponentiate = TRUE, label = list(
-      ace_counts ~ "ACEs",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
-      sc_age_years ~ "Child Age",
-      sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
-
-# Create a summary table for the Flourishing Behavioral Problems model
-tbl_beh_flourish <- tbl_regression(flourish_model_beh, exponentiate = TRUE, label = list(
-      ace_counts ~ "ACEs",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
-      sc_age_years ~ "Child Age",
-      sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
-
-# Create a summary table for the Non-Flourishing Behavioral Problems model
-tbl_beh_non_flourish <- tbl_regression(non_flourish_model_beh, exponentiate = TRUE, label = list(
-      ace_counts ~ "ACEs",
-      fpl_cat ~ "Federal Poverty Level",
-      highgrade_tvis_cat ~ "Caregiver Education",
-      sc_age_years ~ "Child Age",
-      sc_race_cat ~ "Child Race",
-      sc_sex_cat ~ "Child Sex"
-    )) |>
-  bold_p(t = 0.05)
-
-# Merge the flourishing model tables into one
-flourish_tbl_combined <- tbl_merge(
-  tbls = list(tbl_dep_flourish, tbl_beh_flourish),
-  tab_spanner = c("Depression Model", "Behavioral Problems Model")
-)
-
-# Display the combined flourishing model tables
-flourish_tbl_combined
-
-# Merge the non-flourishing model tables into one
-non_flourish_tbl_combined <- tbl_merge(
-  tbls = list(tbl_dep_non_flourish, tbl_beh_non_flourish),
-  tab_spanner = c("Depression Model", "Behavioral Problems Model")
-)
-
-# Display the combined non-flourishing model tables
-non_flourish_tbl_combined
-
+# Print table to review results
+tbl_anx
 ```
 
-Generate odds ratio plots for Depression and Behavioral Problems stratified by flourishing status. First, create separate plots for the flourishing group and the non-flourishing group, adjusting the x-axis limits, confidence intervals, and dot size. The plots are combined for each group to visualize the odds ratios for the Depression and Behavioral Problems models, and labeled accordingly for each condition within both flourishing and non-flourishing samples.
+### Depression Model
 
-```{r Odds Ratio Plots Stratified Models, fig.dim = c(8, 8), message=FALSE, warning=FALSE}
-#| column: screen
-#| out-width: 100%
+```{r depression-model, message=FALSE, warning=FALSE}
+# Logistic regression model for main effects using robust standard errors
+model_dep <- svyglm(Depression ~ ace_counts + CFI_dich + sc_race_cat + sc_sex_cat + 
+                        fpl_category + caregiver_education + sc_age_years + survey_year + 
+                        caregiver_mental_health + child_gen_health + 
+                        caregiver_composition + physical_resources + 
+                        environmental_threats + collective_efficacy +
+                        special_healthcare_needs + total_severity_score + 
+                        HAI_category + barriers_cat + insurance_type + IAI_category,  
+                        design = design, family = quasibinomial())
 
-# Combine the flourishing plots into a list vector
-all.flourish.models <- list()
-all.flourish.models[[1]] <- flourish_model_dep
-all.flourish.models[[2]] <- flourish_model_beh
+# Extract residuals from the logistic regression model
+residuals_dep <- residuals(model_dep, type = "deviance")
 
-# Plot the combined version
-plot_models(all.flourish.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Flourishing Stratified Model", legend.title = "Model", m.labels = c("Depression", "Behavioral Problems"))
+# Plot residuals to visually inspect them
+plot(residuals_dep, main = "Residuals Plot for Depression Model", ylab = "Residuals", xlab = "Index", pch = 20, col = "blue")
+abline(h = 0, col = "red", lty = 2)
 
-# Combine the non-flourishing plots into a list vector
-all.non.flourish.models <- list()
-all.non.flourish.models[[1]] <- non_flourish_model_dep
-all.non.flourish.models[[2]] <- non_flourish_model_beh
+# Perform the Breusch-Pagan test for heteroscedasticity
+bptest(model_dep)
 
-# Plot the combined version
-plot_models(all.flourish.models, axis.lim = c(0.2, 5), dot.size = 1, show.p = TRUE, ci.lvl = 0.95, title = "Odds Ratios by Non-Flourishing Stratified Model", legend.title = "Model", m.labels = c("Depression", "Behavioral Problems"))
+# Calculate Cook's distance for influential observations (leverage) in each model
+cooks_dep <- cooks.distance(model_dep)
+
+# Plot for Depression model
+plot(cooks_dep, type = "p", main = "Cook's Distance for Depression Model",
+     ylab = "Cook's Distance", xlab = "Observation Index")
+abline(h = 4 / length(cooks_dep), col = "red", lty = 2) # Add a reference line for influential points
+
+# Obtain robust standard errors for Depression model
+robust_dep <- coeftest(model_dep, vcov = vcovHC(model_dep, type = "HC0"))
+
+# Create a summary table for the Depression model with robust standard errors
+tbl_dep <- tbl_regression(model_dep, exponentiate = TRUE, label = list(
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_category ~ "Federal Poverty Level",
+      caregiver_education ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex",
+      survey_year ~ "Survey Year",
+      caregiver_mental_health ~ "Caregiver Mental Health",
+      child_gen_health ~ "Child General Health",
+      caregiver_composition ~ "Caregiver Composition",
+      physical_resources ~ "Neighborhood Physical Resources",
+      environmental_threats ~ "Neighborhood Environmental Threats",
+      collective_efficacy ~ "Neighborhood Collective Efficacy",
+      special_healthcare_needs ~ "Special Healthcare Needs",
+      total_severity_score ~ "NDD Severity (Total)",
+      HAI_category ~ "Healthcare Access Index",
+      barriers_cat ~ "Access Barriers Index",
+      insurance_type ~ "Insurance Type",
+      IAI_category ~ "Insurance Adequacy Index"
+    )) %>%
+  add_q() %>% # adjusts p-values for multiple testing (FDR)
+  bold_p(t = 0.05) %>%
+  bold_p(t = 0.05, q = TRUE) %>% # now bold q-values under the threshold of 0.05
+  italicize_levels() %>%
+  gtsummary::as_gt() %>%
+  gt::tab_source_note(gt::md("*Note*. This logistic regression model examines the association between Adverse Childhood Experiences (ACEs) and depression outcomes in neurodivergent children, including main effects of the Child Flourishing Index (CFI) without interaction terms. Survey weights from the National Survey of Children's Health (NSCH) were applied to ensure the representativeness of the target population. Robust standard errors (HC0) were used to account for potential heteroscedasticity not fully addressed by the survey weights. HC0 provides the original White standard errors, which are suitable for large samples and do not include small-sample bias corrections. Covariates include child demographics, family characteristics, neighborhood conditions, and survey year, with FDR-adjusted p-values to account for multiple comparisons."))
+
+# Print table to review results
+tbl_dep
+```
+
+### Behavioral Problems Model
+
+```{r behavioral-problems-model, message=FALSE, warning=FALSE}
+# Logistic regression model for main effects using robust standard errors
+model_beh <- svyglm(Behavioral_Problems ~ ace_counts + CFI_dich + sc_race_cat + 
+                        sc_sex_cat + fpl_category + caregiver_education + sc_age_years + 
+                        survey_year + caregiver_mental_health + child_gen_health + 
+                        caregiver_composition + physical_resources + environmental_threats +
+                        collective_efficacy + special_healthcare_needs + 
+                        total_severity_score + HAI_category + barriers_cat + 
+                        insurance_type + IAI_category,
+                        design = design, family = quasibinomial())
+
+# Extract residuals from the logistic regression model
+residuals_beh <- residuals(model_beh, type = "deviance")
+
+# Plot residuals to visually inspect them
+plot(residuals_beh, main = "Residuals Plot for Behavioral Problems Model", ylab = "Residuals", xlab = "Index", pch = 20, col = "blue")
+abline(h = 0, col = "red", lty = 2)
+
+# Perform the Breusch-Pagan test for heteroscedasticity
+bptest(model_beh)
+
+# Calculate Cook's distance for influential observations (leverage) in each model
+cooks_beh <- cooks.distance(model_beh)
+
+# Plot for Behavioral Problems model
+plot(cooks_beh, type = "p", main = "Cook's Distance for Behavioral Problems Model",
+     ylab = "Cook's Distance", xlab = "Observation Index")
+abline(h = 4 / length(cooks_beh), col = "red", lty = 2) # Add a reference line for influential points
+
+# Obtain robust standard errors for Behavioral Problems model
+robust_beh <- coeftest(model_beh, vcov = vcovHC(model_beh, type = "HC0"))
+
+# Create a summary table for the Behavioral Problems model with robust standard errors
+tbl_beh <- tbl_regression(model_beh, exponentiate = TRUE, label = list( 
+      ace_counts ~ "ACEs",
+      CFI_dich ~ "Child Flourishing Index",
+      fpl_category ~ "Federal Poverty Level",
+      caregiver_education ~ "Caregiver Education",
+      sc_age_years ~ "Child Age",
+      sc_race_cat ~ "Child Race",
+      sc_sex_cat ~ "Child Sex",
+      survey_year ~ "Survey Year",
+      caregiver_mental_health ~ "Caregiver Mental Health",
+      child_gen_health ~ "Child General Health",
+      caregiver_composition ~ "Caregiver Composition",
+      physical_resources ~ "Neighborhood Physical Resources",
+      environmental_threats ~ "Neighborhood Environmental Threats",
+      collective_efficacy ~ "Neighborhood Collective Efficacy",
+      special_healthcare_needs ~ "Special Healthcare Needs",
+      total_severity_score ~ "NDD Severity (Total)",
+      HAI_category ~ "Healthcare Access Index",
+      barriers_cat ~ "Access Barriers Index",
+      insurance_type ~ "Insurance Type",
+      IAI_category ~ "Insurance Adequacy Index"
+    )) %>%
+  add_q() %>% # adjusts p-values for multiple testing (FDR)
+  bold_p(t = 0.05) %>%
+  bold_p(t = 0.05, q = TRUE) %>% # now bold q-values under the threshold of 0.05
+  italicize_levels() %>%
+  gtsummary::as_gt() %>%
+  gt::tab_source_note(gt::md("*Note*. This logistic regression model examines the association between Adverse Childhood Experiences (ACEs) and behavioral problem outcomes in neurodivergent children, including main effects of the Child Flourishing Index (CFI) without interaction terms. Survey weights from the National Survey of Children's Health (NSCH) were applied to ensure the representativeness of the target population. Robust standard errors (HC0) were used to account for potential heteroscedasticity not fully addressed by the survey weights. HC0 provides the original White standard errors, which are suitable for large samples and do not include small-sample bias corrections. Covariates include child demographics, family characteristics, neighborhood conditions, and survey year, with FDR-adjusted p-values to account for multiple comparisons."))
+
+# Print table to review results
+tbl_beh
 
 ```
+:::
 
 # Session Information {#session-information}
 
